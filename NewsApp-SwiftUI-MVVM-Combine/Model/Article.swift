@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Article
-struct Article: Decodable, Identifiable {
+struct Article: Codable, Identifiable {
     var id: String { url }
     let source: Source
     let author: String?
@@ -30,4 +30,3 @@ struct Article: Decodable, Identifiable {
         return formatter.string(from: date)
     }
 }
-

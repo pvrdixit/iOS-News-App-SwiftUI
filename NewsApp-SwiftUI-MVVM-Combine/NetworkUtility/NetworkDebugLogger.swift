@@ -11,6 +11,7 @@ import Foundation
 
 struct NetworkDebugLogger {
     static func printResponseData(_ data: Data?) {
+#if DEBUG
         guard let data = data else {
             print("No data")
             return
@@ -27,9 +28,11 @@ struct NetworkDebugLogger {
             print("RESPONSE BODY (RAW)")
             print(String(decoding: data, as: UTF8.self))
         }
+#endif // DEBUG
     }
     
     static func printDecodingError(_ error: DecodingError) {
+#if DEBUG
         print("Decoding failed")
         
         switch error {
@@ -57,5 +60,6 @@ struct NetworkDebugLogger {
         @unknown default:
             print("Unknown decoding error")
         }
+#endif // DEBUG
     }
 }

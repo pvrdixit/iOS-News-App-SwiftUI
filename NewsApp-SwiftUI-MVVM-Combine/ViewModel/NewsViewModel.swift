@@ -4,6 +4,7 @@
 //
 //  Created by Vijay Raj Dixit on 29/01/26.
 //
+
 import Combine
 import SwiftUI
 
@@ -11,9 +12,15 @@ import SwiftUI
 final class NewsViewModel: ObservableObject {
     @Published private(set) var articles: [Article] = []
     @Published private(set) var isLoading: Bool = false
+    @Published private(set) var isRefreshing: Bool = false
+    @Published private(set) var lastUpdatedText: String?
     @Published var alertMessage: String? = nil   // alert-ready message; view binds directly
 
     private let resource: NewsResource
+    private let cacheStore = NewsCacheStore()
+    private let cacheContext = "top_headlines_us"
+    private let requestTimeoutSecs: Double = 8
+    private let requestTimeoutSecsLongWait: Double = 20
     private var cancellables = Set<AnyCancellable>()
 
     init(resource: NewsResource) {
@@ -28,13 +35,20 @@ final class NewsViewModel: ObservableObject {
     var noArticlesToShow: Bool { articles.isEmpty }
 
     func load() {
-        guard !isLoading else { return }
+        guard !isLoading && !isRefreshing else { return }
+
+        if articles.isEmpty {
+            loadCachedIfAvailable()
+        }
 
         isLoading = true
         alertMessage = nil
         cancellables.removeAll()
 
         resource.fetchTopHeadlines()
+            .timeout(.seconds(noArticlesToShow ? requestTimeoutSecsLongWait : requestTimeoutSecs),
+                     scheduler: DispatchQueue.main,
+                     customError: { URLError(.timedOut) })
             .map(\.articles)
             .receive(on: DispatchQueue.main) // VM is @MainActor, this is defensive but fine
             .sink { [weak self] completion in
@@ -42,17 +56,15 @@ final class NewsViewModel: ObservableObject {
                 self.isLoading = false
 
                 if case .failure(let error) = completion {
-                    self.alertMessage = self.processErrorForUI(from: error)
+                    self.alertMessage = NetworkErrorMapper.message(from: error, viewType: .newsView)
                 }
             } receiveValue: { [weak self] articles in
                 guard let self = self else { return }
                 self.articles = articles
+                self.cacheStore.save(articles: articles, context: self.cacheContext)
+                self.lastUpdatedText = self.formattedTimestamp(date: Date())
             }
             .store(in: &cancellables)
-    }
-
-    func retry() {
-        load()
     }
     
     func dismissError() {
@@ -61,34 +73,55 @@ final class NewsViewModel: ObservableObject {
 
     // MARK: - Pull to refresh (async/await)
     func refresh() async {
-        // Cancel Combine pipelines — refresh should win
+        guard !isLoading && !isRefreshing else { return }
+
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
+        isRefreshing = true
         alertMessage = nil
+        defer { isRefreshing = false }
 
         do {
-            let headlines = try await resource.fetchTopHeadlinesAsync()
+            let headlines = try await withTimeout(seconds: requestTimeoutSecs) {
+                try await self.resource.fetchTopHeadlinesAsync()
+            }
             self.articles = headlines.articles
+            self.cacheStore.save(articles: headlines.articles, context: self.cacheContext)
+            self.lastUpdatedText = self.formattedTimestamp(date: Date())
         } catch {
-            self.alertMessage = processErrorForUI(from: error)
+            self.alertMessage = NetworkErrorMapper.message(from: error, viewType: .newsView)
         }
     }
 
-    // Map low-level errors to user-facing messages
-    private func processErrorForUI(from error: Error) -> String {
-        if let urlError = error as? URLError {
-            print(urlError.code)
-            switch urlError.code {
-            case .notConnectedToInternet:
-                return "No internet connection. Check your network and try again."
-            case .timedOut:
-                return "Request timed out. Please try again."
-
-            default:
-                print(urlError.localizedDescription)
-                return "Unknown error. Please try again."
+    private func withTimeout<T>(seconds: Double,
+                                operation: @escaping () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
             }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1e9))
+                throw URLError(.timedOut)
+            }
+
+            let value = try await group.next()!
+            group.cancelAll()
+            return value
         }
-        return error.localizedDescription
+    }
+
+    private func loadCachedIfAvailable() {
+        guard let cached = cacheStore.load(context: cacheContext) else { return }
+        articles = cached.articles
+        lastUpdatedText = formattedTimestamp(date: cached.cachedAt)
+    }
+
+    private func formattedTimestamp(date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.timeZone = TimeZone.current
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return "Updated \(formatter.string(from: date))"
     }
 }

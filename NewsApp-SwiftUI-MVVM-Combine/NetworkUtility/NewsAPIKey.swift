@@ -13,7 +13,6 @@ enum NewsAPIKey {
         guard let key = Bundle.main.infoDictionary?["API_KEY"] as? String else {
             fatalError("API_KEY not set")
         }
-        print(key)
         return key
     }()
 }

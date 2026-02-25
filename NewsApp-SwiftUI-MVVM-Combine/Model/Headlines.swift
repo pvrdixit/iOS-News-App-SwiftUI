@@ -7,7 +7,7 @@
 
 
 // MARK: - TopHeadlines
-struct Headlines: Decodable {
+struct Headlines: Codable {
     let status: String
     let totalResults: Int
     let articles: [Article]

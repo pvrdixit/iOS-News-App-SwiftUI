@@ -22,14 +22,9 @@ struct NewsView: View {
     // Toolbar
     @ToolbarContentBuilder
     private var toolBarSetup: some ToolbarContent {
-        ToolbarImageButtonItem(systemImage: "magnifyingglass",
-                               placement: .topBarTrailing) {
-            // Search...
-        }
-
         ToolbarImageButtonItem(systemImage: "arrow.clockwise",
                                placement: .topBarLeading) {
-            viewModel.retry()
+            viewModel.load()
         }
     }
 
@@ -51,7 +46,7 @@ struct NewsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolBarSetup }
             .overlay {
-                if viewModel.isLoading && viewModel.noArticlesToShow {
+                if viewModel.isLoading {
                     ProgressView()
                 }
             }
@@ -93,7 +88,9 @@ extension NewsView {
 
     private var secondaryAlertAction: (title: String, action: () -> Void) {(
         title: "Retry",
-        action: {viewModel.retry()})
+        action: {
+            viewModel.load()
+        })
     }
 }
 
