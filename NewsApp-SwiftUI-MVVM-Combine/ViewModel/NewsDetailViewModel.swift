@@ -47,7 +47,6 @@ final class NewsDetailViewModel: ObservableObject {
         alertMessage = nil
     }
     
-    // Map low-level errors to user-facing messages
     private func processErrorForUI(from error: Error) -> String {
         if let navigationError = error as? WebPage.NavigationError {
             return NavigationErrorMapper.message(from: navigationError, viewType: .newsDetailView)

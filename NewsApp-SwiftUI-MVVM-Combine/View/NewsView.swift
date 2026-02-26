@@ -19,15 +19,16 @@ struct NewsView: View {
         _viewModel = StateObject(wrappedValue: NewsViewModel())
     }
     
-    // Toolbar
+    /// Toolbar
     @ToolbarContentBuilder
     private var toolBarSetup: some ToolbarContent {
         ToolbarImageButtonItem(systemImage: "arrow.clockwise",
-                               placement: .topBarLeading) {
+                               placement: .topBarTrailing) {
             viewModel.load()
         }
     }
 
+    /// NewsView
     var body: some View {
         NavigationStack {
             List(viewModel.articles) { article in
@@ -42,7 +43,7 @@ struct NewsView: View {
                 }
             }
             .listStyle(.plain)
-            .navigationTitle("News USA")
+            .navigationTitle("News")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolBarSetup }
             .overlay {
@@ -52,9 +53,6 @@ struct NewsView: View {
             }
             .task {
                 viewModel.load()
-            }
-            .refreshable {
-                await viewModel.refresh()
             }
             .showAlert(message: errorAlertMessage,
                        isPresented: errorAlertBinding,
@@ -67,8 +65,8 @@ struct NewsView: View {
     }
 }
 
+/// Error Alerts
 extension NewsView {
-    //Error Alert parameters
     private var errorAlertMessage: String { viewModel.alertMessage ?? "Unable to fetch news, please try again" }
     private var errorAlertBinding: Binding<Bool> {
         Binding(

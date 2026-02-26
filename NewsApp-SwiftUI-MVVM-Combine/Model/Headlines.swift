@@ -6,7 +6,6 @@
 //
 
 
-// MARK: - TopHeadlines
 struct Headlines: Codable {
     let status: String
     let totalResults: Int

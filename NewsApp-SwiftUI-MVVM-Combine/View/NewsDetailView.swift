@@ -12,6 +12,7 @@ struct NewsDetailView: View {
     @StateObject private var viewModel = NewsDetailViewModel()
     let url: URL
 
+    /// NewsDetailView
     var body: some View {
         WebView(viewModel.page)
             .ignoresSafeArea()
@@ -36,6 +37,7 @@ struct NewsDetailView: View {
     }
 }
 
+/// Error Alerts
 private extension NewsDetailView {
     var errorAlertMessage: String {
         viewModel.alertMessage ?? "Unable to load this article."

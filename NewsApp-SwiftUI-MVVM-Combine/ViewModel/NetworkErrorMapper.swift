@@ -12,7 +12,7 @@ enum ViewType {
     case newsDetailView
 }
 
-
+/// Map low-level errors to user-facing messages
 enum NetworkErrorMapper {
     static func message(from error: Error, viewType: ViewType) -> String {
         let fallback = viewType == .newsView ? "Unable to load articles right now. Please try again." : "Unable to load this article right now. Please try again."

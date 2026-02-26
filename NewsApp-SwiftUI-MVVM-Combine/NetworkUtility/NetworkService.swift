@@ -11,5 +11,4 @@ import Combine
 
 protocol NetworkService {
     func request<T: Decodable>(_ request: URLRequest) -> AnyPublisher<T, Error>
-    func requestAsync<T: Decodable>(_ request: URLRequest) async throws -> T
 }

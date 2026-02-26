@@ -13,14 +13,14 @@ import Combine
 final class NewsResource {
     private let service: NetworkService
 
-    // Inject the service for testability; default is your HTTPUtility
+    /// Inject the service for testability; default is your HTTPUtility
     init(service: NetworkService = HTTPUtility()) {
         self.service = service
     }
 
-    // Primary API: caller supplies apiKey explicitly
+    /// Fetch news using Combine
     func fetchTopHeadlines() -> AnyPublisher<Headlines, Error> {
-        guard let url = makeTopHeadlinesURL(apiKey: NewsAPIKey.newsAPIKey) else {
+        guard let url = makeTopHeadlinesURL() else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
@@ -30,25 +30,15 @@ final class NewsResource {
         return service.request(apiRequest.urlRequest())
     }
     
-    // Async API
-    func fetchTopHeadlinesAsync() async throws -> Headlines {
-        guard let url = makeTopHeadlinesURL(apiKey: NewsAPIKey.newsAPIKey) else {
-            throw URLError(.badURL)
-        }
-
-        let apiRequest = APIRequest(url: url, method: .get)
-        return try await service.requestAsync(apiRequest.urlRequest())
-    }
-    
-    // MARK: - Private helpers
-    private func makeTopHeadlinesURL(apiKey: String) -> URL? {
+    /// Construct topheadlines API endpoint
+    private func makeTopHeadlinesURL() -> URL? {
         var components = URLComponents()
         components.scheme = APIConstants.scheme
         components.host = APIConstants.host
         components.path = APIConstants.Path.topHeadlines
         components.queryItems = [
             URLQueryItem(name: APIConstants.Query.country, value: APIConstants.Default.country),
-            URLQueryItem(name: APIConstants.Query.apiKey, value: apiKey)
+            URLQueryItem(name: APIConstants.Query.apiKey, value: NewsAPIKey.newsAPIKey)
         ]
         return components.url
     }

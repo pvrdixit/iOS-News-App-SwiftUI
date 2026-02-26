@@ -1,0 +1,23 @@
+//
+//  RemoteLoggerService.swift
+//  NewsApp-SwiftUI-MVVM-Combine
+//
+//  Created by Vijay Raj Dixit on 26/02/26.
+//
+
+
+public final class RemoteLoggerService: LoggerService {
+    public init() {}
+
+    public func log(_ level: LogLevel,
+                    _ message: @autoclosure () -> String,
+                    category: LogCategory,
+                    file: String,
+                    function: String,
+                    line: Int) {
+        
+        /// Can add any Remote logger like Crashlytics, Sentry or Custom API.
+        /// Crashlytics.crashlytics().log("[\(level)] [\(category)] \(message())")
+        _ = (level, message(), category, file, function, line)
+    }
+}

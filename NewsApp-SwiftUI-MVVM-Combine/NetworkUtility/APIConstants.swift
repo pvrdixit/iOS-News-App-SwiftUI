@@ -17,9 +17,10 @@ enum APIConstants {
     }
 
     enum Query {
-        // Names of the query parameters
         static let country = "country"
         static let apiKey  = "apiKey"
+        static let page = "page"
+        static let pageSize = "pageSize"
     }
 
     enum Default {

@@ -7,7 +7,6 @@
 
 import Foundation
 
-// MARK: - Article
 struct Article: Codable, Identifiable {
     var id: String { url }
     let source: Source

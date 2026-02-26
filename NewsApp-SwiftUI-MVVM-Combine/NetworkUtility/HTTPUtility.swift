@@ -19,10 +19,10 @@ final class HTTPUtility: NetworkService {
         self.session = session
         self.decoder = JSONDecoder()
     }
-    
+
+    /// Make Request, Validate Response and Decode it using Combine
     func request<T: Decodable>(_ request: URLRequest) -> AnyPublisher<T, Error> {
         session.dataTaskPublisher(for: request)
-            // Validate HTTP response
             .tryMap { data, response in
                 guard
                     let httpResponse = response as? HTTPURLResponse,
@@ -31,37 +31,16 @@ final class HTTPUtility: NetworkService {
                     throw URLError(.badServerResponse)
                 }
 
-                NetworkDebugLogger.printResponseData(data)
+                NetworkDebugLogger.debugResponseData(data)
                 return data
             }
-            // Decode
             .decode(type: T.self, decoder: decoder)
             .mapError { error in
                 if let decodingError = error as? DecodingError {
-                    NetworkDebugLogger.printDecodingError(decodingError)
+                    NetworkDebugLogger.debugDecodingError(decodingError)
                 }
                 return error
             }
             .eraseToAnyPublisher()
-    }
-    
-    func requestAsync<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await session.data(for: request)
-
-        guard
-            let httpResponse = response as? HTTPURLResponse,
-            (200...299).contains(httpResponse.statusCode)
-        else {
-            throw URLError(.badServerResponse)
-        }
-
-        NetworkDebugLogger.printResponseData(data)
-
-        do {
-            return try decoder.decode(T.self, from: data)
-        } catch let decodingError as DecodingError {
-            NetworkDebugLogger.printDecodingError(decodingError)
-            throw decodingError
-        }
     }
 }

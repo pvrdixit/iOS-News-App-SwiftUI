@@ -11,7 +11,9 @@ import SwiftUI
 struct NewsApp_SwiftUI_MVVM_CombineApp: App {
     var body: some Scene {
         WindowGroup {
-            NewsView()
+            let newsResource = NewsResource()
+            let newsViewModel = NewsViewModel(resource: newsResource)
+            NewsView(viewModel: newsViewModel)
         }
     }
 }

@@ -7,6 +7,7 @@
 
 import WebKit
 
+/// Map low-level errors to user-facing messages
 enum NavigationErrorMapper {
     static func message(from navigationError: WebPage.NavigationError, viewType: ViewType) -> String {
         switch navigationError {
