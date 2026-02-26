@@ -8,39 +8,39 @@
 
 
 import Foundation
-import Combine
 
 final class HTTPUtility: NetworkService {
-    
+
     private let session: URLSession
     private let decoder: JSONDecoder
-    
-    init(session: URLSession = .shared) {
-        self.session = session
+
+    /// Default init with a standard request/resource timeout.
+    init(timeout: TimeInterval = 12) {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = timeout
+        config.timeoutIntervalForResource = timeout
+
+        self.session = URLSession(configuration: config)
         self.decoder = JSONDecoder()
     }
 
-    /// Make Request, Validate Response and Decode it using Combine
-    func request<T: Decodable>(_ request: URLRequest) -> AnyPublisher<T, Error> {
-        session.dataTaskPublisher(for: request)
-            .tryMap { data, response in
-                guard
-                    let httpResponse = response as? HTTPURLResponse,
-                    (200...299).contains(httpResponse.statusCode)
-                else {
-                    throw URLError(.badServerResponse)
-                }
+    /// Make request, validate response, decode (async/await).
+    func requestAsync<T: Decodable>(_ request: URLRequest) async throws -> T {
+        let (data, response) = try await session.data(for: request)
 
-                NetworkDebugLogger.debugResponseData(data)
-                return data
-            }
-            .decode(type: T.self, decoder: decoder)
-            .mapError { error in
-                if let decodingError = error as? DecodingError {
-                    NetworkDebugLogger.debugDecodingError(decodingError)
-                }
-                return error
-            }
-            .eraseToAnyPublisher()
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode)
+        else {
+            throw URLError(.badServerResponse)
+        }
+
+        NetworkDebugLogger.debugResponseData(data)
+
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch let decodingError as DecodingError {
+            NetworkDebugLogger.debugDecodingError(decodingError)
+            throw decodingError
+        }
     }
 }

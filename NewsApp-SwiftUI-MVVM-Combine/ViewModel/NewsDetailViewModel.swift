@@ -23,6 +23,7 @@ final class NewsDetailViewModel: ObservableObject {
         currentURL = url
         isLoading = true
         alertMessage = nil
+        defer { isLoading = false}
         
         do {
             for try await event in page.load(url) {
@@ -31,9 +32,11 @@ final class NewsDetailViewModel: ObservableObject {
                     return
                 }
             }
-            isLoading = false
+        } catch is CancellationError {
+            return
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            return
         } catch {
-            isLoading = false
             alertMessage = processErrorForUI(from: error)
         }
     }

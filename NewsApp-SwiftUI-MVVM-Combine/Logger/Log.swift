@@ -1,12 +1,12 @@
 //
-//  AppLog.swift
+//  Log.swift
 //  NewsApp-SwiftUI-MVVM-Combine
 //
 //  Created by Vijay Raj Dixit on 26/02/26.
 //
 
 
-public enum AppLog {
+public enum Log {
     /// Swap this in one place.
     public static let shared: LoggerService = {
         let os = OSLoggerService()

@@ -23,22 +23,30 @@ struct NewsView: View {
     @ToolbarContentBuilder
     private var toolBarSetup: some ToolbarContent {
         ToolbarImageButtonItem(systemImage: "arrow.clockwise",
-                               placement: .topBarTrailing) {
-            viewModel.load()
+                               placement: .topBarTrailing,
+                               isDisabled: viewModel.isLoading) {
+            Task {
+                await viewModel.fetchNews()
+            }
         }
     }
 
     /// NewsView
     var body: some View {
         NavigationStack {
-            List(viewModel.articles) { article in
-                NewsViewListItem(authorName: article.author ?? "",
-                                 date: article.publishedDateToDisplay,
-                                 headline: article.title,
-                                 imageURL: article.urlToImage)
-                .onTapGesture {
-                    if let url = URL(string: article.url) {
-                        selectedURL = url
+            List {
+                ForEach(viewModel.articles) { article in
+                    NewsViewListItem(authorName: article.author ?? "",
+                                     date: article.publishedDateToDisplay,
+                                     headline: article.title,
+                                     imageURL: article.urlToImage)
+                    .onTapGesture {
+                        if let url = URL(string: article.url) {
+                            selectedURL = url
+                        }
+                    }
+                    .task(id: article.id) {
+                        await viewModel.loadMoreIfNeeded(currentItem: article)
                     }
                 }
             }
@@ -52,7 +60,9 @@ struct NewsView: View {
                 }
             }
             .task {
-                viewModel.load()
+                if viewModel.articles.isEmpty {
+                    await viewModel.fetchNews()
+                }
             }
             .showAlert(message: errorAlertMessage,
                        isPresented: errorAlertBinding,
@@ -80,14 +90,18 @@ extension NewsView {
     }
     
     private var primaryAlertAction: (title: String, action: () -> Void) {(
-        title: "Ok",
-        action: {})
+        title: "Retry",
+        action: {
+            Task {
+                await viewModel.fetchNews()
+            }
+        })
     }
 
     private var secondaryAlertAction: (title: String, action: () -> Void) {(
-        title: "Retry",
+        title: "Cancel",
         action: {
-            viewModel.load()
+            viewModel.dismissError()
         })
     }
 }
