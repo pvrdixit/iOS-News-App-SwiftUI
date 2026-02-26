@@ -37,6 +37,12 @@ final class NewsDetailViewModel: ObservableObject {
         } catch let urlError as URLError where urlError.code == .cancelled {
             return
         } catch {
+            Log.shared.error("Article load failed",
+                             category: .network,
+                             metadata: [
+                                "url": url.absoluteString,
+                                "error": error.localizedDescription
+                             ])
             alertMessage = processErrorForUI(from: error)
         }
     }

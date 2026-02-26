@@ -10,49 +10,50 @@
 import Foundation
 
 struct NetworkDebugLogger {
-    
-    static func debugResponseData(_ data: Data?) {
-        guard let data = data else {
-            print("No data")
-            return
-        }
-        
-        if let object = try? JSONSerialization.jsonObject(with: data),
-           let prettyData = try? JSONSerialization.data(withJSONObject: object, options: .prettyPrinted),
-           let json = String(data: prettyData, encoding: .utf8) {
-            print("RESPONSE BODY (JSON)")
-            print(json)
-        } else {
-            print("RESPONSE BODY (RAW)")
-            print(String(decoding: data, as: UTF8.self))
-        }
-    }
-    
     static func debugDecodingError(_ error: DecodingError) {
         
         switch error {
         case .typeMismatch(let type, let context):
-            print("Type mismatch for type:", type)
-            print("CodingPath:", context.codingPath)
-            print("Description:", context.debugDescription)
+            Log.shared.error("Decoding failed: type mismatch",
+                             category: .network,
+                             metadata: [
+                                "type": "\(type)",
+                                "codingPath": codingPathString(context.codingPath),
+                                "description": context.debugDescription
+                             ])
             
         case .valueNotFound(let type, let context):
-            print("Value not found for type:", type)
-            print("CodingPath:", context.codingPath)
-            print("Description:", context.debugDescription)
+            Log.shared.error("Decoding failed: value not found",
+                             category: .network,
+                             metadata: [
+                                "type": "\(type)",
+                                "codingPath": codingPathString(context.codingPath),
+                                "description": context.debugDescription
+                             ])
             
         case .keyNotFound(let key, let context):
-            print("Key not found:", key.stringValue)
-            print("CodingPath:", context.codingPath)
-            print("Description:", context.debugDescription)
+            Log.shared.error("Decoding failed: key not found",
+                             category: .network,
+                             metadata: [
+                                "key": key.stringValue,
+                                "codingPath": codingPathString(context.codingPath),
+                                "description": context.debugDescription
+                             ])
             
         case .dataCorrupted(let context):
-            print("Data corrupted")
-            print("CodingPath:", context.codingPath)
-            print("Description:", context.debugDescription)
+            Log.shared.error("Decoding failed: data corrupted",
+                             category: .network,
+                             metadata: [
+                                "codingPath": codingPathString(context.codingPath),
+                                "description": context.debugDescription
+                             ])
             
         @unknown default:
-            print("Unknown decoding error")
+            Log.shared.error("Decoding failed: unknown error", category: .network)
         }
+    }
+
+    private static func codingPathString(_ codingPath: [CodingKey]) -> String {
+        codingPath.map(\.stringValue).joined(separator: ".")
     }
 }

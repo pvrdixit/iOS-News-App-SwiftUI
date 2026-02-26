@@ -26,21 +26,67 @@ final class HTTPUtility: NetworkService {
 
     /// Make request, validate response, decode (async/await).
     func requestAsync<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await session.data(for: request)
+        let method = request.httpMethod ?? "GET"
+        let urlString = request.url?.absoluteString ?? "unknown"
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            Log.shared.error("Request failed",
+                             category: .network,
+                             metadata: [
+                                "method": method,
+                                "url": urlString,
+                                "error": error.localizedDescription
+                             ])
+            throw error
+        }
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode)
         else {
+            if let httpResponse = response as? HTTPURLResponse {
+                Log.shared.error("Request returned bad status code",
+                                 category: .network,
+                                 metadata: [
+                                    "method": method,
+                                    "url": urlString,
+                                    "statusCode": "\(httpResponse.statusCode)"
+                                 ])
+            } else {
+                Log.shared.error("Request returned non-HTTP response",
+                                 category: .network,
+                                 metadata: [
+                                    "method": method,
+                                    "url": urlString
+                                 ])
+            }
             throw URLError(.badServerResponse)
         }
-
-        NetworkDebugLogger.debugResponseData(data)
 
         do {
             return try decoder.decode(T.self, from: data)
         } catch let decodingError as DecodingError {
             NetworkDebugLogger.debugDecodingError(decodingError)
+            Log.shared.error("Response decode failed",
+                             category: .network,
+                             metadata: [
+                                "method": method,
+                                "url": urlString,
+                                "error": decodingError.localizedDescription
+                             ])
             throw decodingError
+        } catch {
+            Log.shared.error("Unexpected decode error",
+                             category: .network,
+                             metadata: [
+                                "method": method,
+                                "url": urlString,
+                                "error": error.localizedDescription
+                             ])
+            throw error
         }
     }
 }

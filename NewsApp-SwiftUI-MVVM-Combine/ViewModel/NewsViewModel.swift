@@ -26,46 +26,13 @@ final class NewsViewModel: ObservableObject {
     }
     convenience init() { self.init(resource: NewsResource()) }
 
+    ///Fetch Articles
     func fetchNews() async {
         guard !isLoading else { return }
 
         await fetchPage(page: 1, isFirstPage: true)
     }
-
-    func loadMoreIfNeeded(currentItem: Article) async {
-        guard hasLoadedFirstPageFromNetwork,
-              shouldLoadMore(after: currentItem),
-              let nextPage = paginationState.nextPageCandidate
-        else { return }
-
-        await fetchPage(page: nextPage, isFirstPage: false)
-    }
     
-    private func processErrorForUI(from error: Error) -> String {
-        NetworkErrorMapper.message(from: error, viewType: .newsView)
-    }
-    
-    func dismissError() {
-        alertMessage = nil
-    }
-
-    private func loadFromCacheIfAvailable() -> [Article]? {
-        do {
-            return try cacheStore.load(context: cacheContext)?.articles
-        } catch {
-            print("Cache load failed: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
-    private func saveToCache(articles: [Article]) {
-        do {
-            try cacheStore.save(articles: articles, context: cacheContext)
-        } catch {
-            print("Cache save failed: \(error.localizedDescription)")
-        }
-    }
-
     private func fetchPage(page: Int, isFirstPage: Bool) async {
         guard !isLoading else { return }
 
@@ -103,17 +70,77 @@ final class NewsViewModel: ObservableObject {
         } catch {
             if isFirstPage, articles.isEmpty, let cachedArticles = loadFromCacheIfAvailable() {
                 articles = cachedArticles
+                Log.shared.warning("First-page fetch failed, showing cached headlines",
+                                   category: .cache,
+                                   metadata: [
+                                    "page": "\(page)",
+                                    "cachedCount": "\(cachedArticles.count)",
+                                    "error": error.localizedDescription
+                                   ])
                 return
             }
+            Log.shared.error("Failed to fetch headlines",
+                             category: .network,
+                             metadata: [
+                                "page": "\(page)",
+                                "error": error.localizedDescription
+                             ])
             alertMessage = processErrorForUI(from: error)
         }
     }
 
+    ///Pagination Logic
+    func loadMoreIfNeeded(currentItem: Article) async {
+        guard hasLoadedFirstPageFromNetwork,
+              shouldLoadMore(after: currentItem),
+              let nextPage = paginationState.nextPageCandidate
+        else { return }
+        await fetchPage(page: nextPage, isFirstPage: false)
+    }
+    
     private func shouldLoadMore(after article: Article) -> Bool {
         guard !isLoading, paginationState.canLoadMore else { return false }
         guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return false }
 
         let triggerIndex = max(articles.count - loadMoreThreshold, 0)
         return index >= triggerIndex
+    }
+    
+    ///Cache Logic
+    private func loadFromCacheIfAvailable() -> [Article]? {
+        do {
+            return try cacheStore.load(context: cacheContext)?.articles
+        } catch {
+            Log.shared.error("Cache load failed",
+                             category: .cache,
+                             metadata: [
+                                "context": cacheContext,
+                                "error": error.localizedDescription
+                             ])
+            return nil
+        }
+    }
+
+    private func saveToCache(articles: [Article]) {
+        do {
+            try cacheStore.save(articles: articles, context: cacheContext)
+        } catch {
+            Log.shared.error("Cache save failed",
+                             category: .cache,
+                             metadata: [
+                                "context": cacheContext,
+                                "count": "\(articles.count)",
+                                "error": error.localizedDescription
+                             ])
+        }
+    }
+
+    ///Error flow
+    private func processErrorForUI(from error: Error) -> String {
+        NetworkErrorMapper.message(from: error, viewType: .newsView)
+    }
+    
+    func dismissError() {
+        alertMessage = nil
     }
 }

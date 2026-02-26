@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Kingfisher
+import Foundation
 
 struct ImageBuilderView: View {
     let imageURL: String?
@@ -21,7 +22,7 @@ struct ImageBuilderView: View {
                     placeholderImage
                 }
                 .onFailure { error in
-                    print("Image load failed, \(error.localizedDescription)")
+                    Log.shared.warning("Image load failed: \(imageURL)", category: .ui)
                 }
                 .resizable()
                 .scaledToFit()

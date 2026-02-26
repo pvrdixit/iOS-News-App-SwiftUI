@@ -19,7 +19,18 @@ final class NewsResource {
 
     /// Fetch paginated top headlines using async/await.
     func fetchTopHeadlinesAsync(page: Int = 1, pageSize: Int = 20) async throws -> Headlines {
-        guard let url = makeTopHeadlinesURL(page: page, pageSize: pageSize) else {
+        let safePage = max(1, page)
+        let safePageSize = min(max(1, pageSize), 100)
+        let country = APIConstants.Default.country
+
+        guard let url = makeTopHeadlinesURL(page: safePage, pageSize: safePageSize) else {
+            Log.shared.error("Failed to build top-headlines URL",
+                             category: .network,
+                             metadata: [
+                                "country": country,
+                                "page": "\(safePage)",
+                                "pageSize": "\(safePageSize)"
+                             ])
             throw URLError(.badURL)
         }
 
