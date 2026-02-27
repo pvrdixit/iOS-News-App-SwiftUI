@@ -15,7 +15,7 @@ final class HTTPUtility: NetworkService {
     private let decoder: JSONDecoder
 
     /// Default init with a standard request/resource timeout.
-    init(timeout: TimeInterval = 12) {
+    init(timeout: TimeInterval = 8.0) {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = timeout
         config.timeoutIntervalForResource = timeout

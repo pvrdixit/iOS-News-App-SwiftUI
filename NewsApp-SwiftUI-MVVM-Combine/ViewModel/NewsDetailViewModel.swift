@@ -16,6 +16,9 @@ final class NewsDetailViewModel: ObservableObject {
     
     let page = WebPage()
     private var currentURL: URL?
+    var showEmptyState: Bool {
+        alertMessage != nil && !isLoading
+    }
     
     func load(url: URL) async {
         guard !isLoading else { return }

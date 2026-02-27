@@ -8,10 +8,16 @@
 import SwiftUI
 import Combine
 
+enum LoadingState {
+    case isLoading
+    case isRefreshing
+    case idle
+}
+
 @MainActor
 final class NewsViewModel: ObservableObject {
     @Published private(set) var articles: [Article] = []
-    @Published private(set) var isLoading: Bool = false
+    @Published private(set) var loadingState: LoadingState = .idle
     @Published var alertMessage: String? = nil
 
     private let resource: NewsResource
@@ -24,23 +30,32 @@ final class NewsViewModel: ObservableObject {
     init(resource: NewsResource) {
         self.resource = resource
     }
-    convenience init() { self.init(resource: NewsResource()) }
-
+    
     ///Fetch Articles
-    func fetchNews() async {
-        guard !isLoading else { return }
+    func fetchNews(_ state: LoadingState = .isLoading) async {
+        guard loadingState == .idle else { return }
 
-        await fetchPage(page: 1, isFirstPage: true)
+        await fetchPage(page: 1, isFirstPage: true, state)
     }
     
-    private func fetchPage(page: Int, isFirstPage: Bool) async {
-        guard !isLoading else { return }
+    private func fetchPage(page: Int, isFirstPage: Bool, _ state: LoadingState = .isLoading) async {
+        guard loadingState == .idle else { return }
 
-        isLoading = true
+        loadingState = state
+        var deferredAlertMessage: String?
+
         if isFirstPage {
             alertMessage = nil
         }
-        defer { isLoading = false }
+
+        defer {
+            loadingState = .idle
+            if let deferredAlertMessage {
+                DispatchQueue.main.async { [weak self] in
+                    self?.alertMessage = deferredAlertMessage
+                }
+            }
+        }
 
         do {
             let headlines = try await resource.fetchTopHeadlinesAsync(
@@ -49,10 +64,12 @@ final class NewsViewModel: ObservableObject {
             )
 
             if isFirstPage {
-                articles = paginationState.applyFirstPage(
-                    articles: headlines.articles,
-                    totalResults: headlines.totalResults
-                )
+                if !shouldKeepExistingArticles(onFirstPageResponse: headlines.articles) {
+                    articles = paginationState.applyFirstPage(
+                        articles: headlines.articles,
+                        totalResults: headlines.totalResults
+                    )
+                }
                 hasLoadedFirstPageFromNetwork = true
             } else {
                 articles = paginationState.applyNextPage(
@@ -63,30 +80,35 @@ final class NewsViewModel: ObservableObject {
                 )
             }
             saveToCache(articles: articles)
-        } catch is CancellationError {
-            return
-        } catch let urlError as URLError where urlError.code == .cancelled {
-            return
         } catch {
-            if isFirstPage, articles.isEmpty, let cachedArticles = loadFromCacheIfAvailable() {
-                articles = cachedArticles
-                Log.shared.warning("First-page fetch failed, showing cached headlines",
-                                   category: .cache,
-                                   metadata: [
-                                    "page": "\(page)",
-                                    "cachedCount": "\(cachedArticles.count)",
-                                    "error": error.localizedDescription
-                                   ])
-                return
-            }
-            Log.shared.error("Failed to fetch headlines",
-                             category: .network,
-                             metadata: [
-                                "page": "\(page)",
-                                "error": error.localizedDescription
-                             ])
-            alertMessage = processErrorForUI(from: error)
+            deferredAlertMessage = resolveFetchError(error, page: page, isFirstPage: isFirstPage)
         }
+    }
+
+    /// log error and get alert message
+    private func resolveFetchError(_ error: Error, page: Int, isFirstPage: Bool) -> String? {
+        if error is CancellationError { return nil }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return nil }
+
+        if isFirstPage, articles.isEmpty, let cachedArticles = loadFromCacheIfAvailable() {
+            articles = cachedArticles
+            Log.shared.warning("First-page fetch failed, showing cached headlines",
+                               category: .cache,
+                               metadata: [
+                                "page": "\(page)",
+                                "cachedCount": "\(cachedArticles.count)",
+                                "error": error.localizedDescription
+                               ])
+            return nil
+        }
+
+        Log.shared.error("Failed to fetch headlines",
+                         category: .network,
+                         metadata: [
+                            "page": "\(page)",
+                            "error": error.localizedDescription
+                         ])
+        return processErrorForUI(from: error)
     }
 
     ///Pagination Logic
@@ -99,11 +121,27 @@ final class NewsViewModel: ObservableObject {
     }
     
     private func shouldLoadMore(after article: Article) -> Bool {
-        guard !isLoading, paginationState.canLoadMore else { return false }
+        guard loadingState == .idle, paginationState.canLoadMore else { return false }
         guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return false }
 
         let triggerIndex = max(articles.count - loadMoreThreshold, 0)
         return index >= triggerIndex
+    }
+
+    private func shouldKeepExistingArticles(onFirstPageResponse incoming: [Article]) -> Bool {
+        guard !articles.isEmpty, !incoming.isEmpty else { return false }
+
+        if articles.first?.id == incoming.first?.id {
+            return true
+        }
+
+        let existingTopFive = Array(articles.prefix(5)).map(\.id)
+        let incomingTopFive = Array(incoming.prefix(5)).map(\.id)
+        guard existingTopFive.count == 5, incomingTopFive.count == 5 else {
+            return false
+        }
+
+        return existingTopFive == incomingTopFive
     }
     
     ///Cache Logic

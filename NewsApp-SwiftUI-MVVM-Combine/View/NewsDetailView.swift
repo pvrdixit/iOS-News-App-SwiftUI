@@ -19,6 +19,15 @@ struct NewsDetailView: View {
             .overlay {
                 if viewModel.isLoading {
                     ProgressView()
+                } else if viewModel.showEmptyState {
+                    EmptyStateView(
+                        title: "Unable to load the page",
+                        message: errorAlertMessage,
+                        buttonTitle: "Try again",
+                        action: {
+                            Task { await viewModel.retry() }
+                        }
+                    )
                 }
             }
             .task(id: url) {
@@ -45,7 +54,7 @@ private extension NewsDetailView {
 
     var errorAlertBinding: Binding<Bool> {
         Binding(
-            get: { viewModel.alertMessage != nil },
+            get: { viewModel.alertMessage != nil && !viewModel.showEmptyState },
             set: { newValue in
                 if !newValue { viewModel.dismissError() }
             }

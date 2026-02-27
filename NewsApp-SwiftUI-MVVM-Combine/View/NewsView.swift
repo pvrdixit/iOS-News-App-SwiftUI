@@ -15,22 +15,6 @@ struct NewsView: View {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
-    init() {
-        _viewModel = StateObject(wrappedValue: NewsViewModel())
-    }
-    
-    /// Toolbar
-    @ToolbarContentBuilder
-    private var toolBarSetup: some ToolbarContent {
-        ToolbarImageButtonItem(systemImage: "arrow.clockwise",
-                               placement: .topBarTrailing,
-                               isDisabled: viewModel.isLoading) {
-            Task {
-                await viewModel.fetchNews()
-            }
-        }
-    }
-
     /// NewsView
     var body: some View {
         NavigationStack {
@@ -53,16 +37,29 @@ struct NewsView: View {
             .listStyle(.plain)
             .navigationTitle("News")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolBarSetup }
             .overlay {
-                if viewModel.isLoading {
+                if viewModel.loadingState == .isLoading {
                     ProgressView()
+                } else if showEmptyState {
+                    EmptyStateView(
+                        title: "Couldn't load news",
+                        message: errorAlertMessage,
+                        buttonTitle: "Try again",
+                        action: {
+                            Task {
+                                await viewModel.fetchNews(.isLoading)
+                            }
+                        }
+                    )
                 }
             }
             .task {
                 if viewModel.articles.isEmpty {
-                    await viewModel.fetchNews()
+                     await viewModel.fetchNews()
                 }
+            }
+            .refreshable {
+                await viewModel.fetchNews(.isRefreshing)
             }
             .showAlert(message: errorAlertMessage,
                        isPresented: errorAlertBinding,
@@ -78,10 +75,16 @@ struct NewsView: View {
 /// Error Alerts
 extension NewsView {
     private var errorAlertMessage: String { viewModel.alertMessage ?? "Unable to fetch news, please try again" }
+    private var showEmptyState: Bool {
+        viewModel.articles.isEmpty &&
+        viewModel.loadingState == .idle &&
+        viewModel.alertMessage != nil
+    }
+
     private var errorAlertBinding: Binding<Bool> {
         Binding(
             get: {
-                viewModel.alertMessage != nil
+                viewModel.alertMessage != nil && !showEmptyState
             },
             set: {
                 if !$0 { viewModel.dismissError() }
@@ -107,5 +110,5 @@ extension NewsView {
 }
 
 #Preview {
-    NewsView()
+    NewsView(viewModel: NewsViewModel(resource: NewsResource()))
 }
