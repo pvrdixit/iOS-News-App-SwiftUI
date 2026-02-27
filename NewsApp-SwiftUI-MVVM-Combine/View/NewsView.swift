@@ -8,12 +8,8 @@
 import SwiftUI
 
 struct NewsView: View {
-    @StateObject private var viewModel: NewsViewModel
+    @ObservedObject var viewModel: NewsViewModel
     @State private var selectedURL: URL?
-
-    init(viewModel: NewsViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
-    }
 
     /// NewsView
     var body: some View {
