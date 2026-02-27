@@ -23,6 +23,7 @@ struct NewsView: View {
                     .onTapGesture {
                         if let url = URL(string: article.url) {
                             selectedURL = url
+                            viewModel.saveRecentlyViewed(article)
                         }
                     }
                     .task(id: article.id) {

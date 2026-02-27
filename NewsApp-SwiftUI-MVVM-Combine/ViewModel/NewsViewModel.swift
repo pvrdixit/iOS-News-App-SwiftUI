@@ -21,8 +21,8 @@ final class NewsViewModel: ObservableObject {
     @Published var alertMessage: String? = nil
 
     private let resource: NewsResource
+    private let recentStore = RecentHistoryStore()
     private let cacheStore = NewsCacheStore()
-    private let cacheContext = "top_headlines_us"
     private var paginationState = NewsPaginationState(pageSize: 5)
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
@@ -147,12 +147,11 @@ final class NewsViewModel: ObservableObject {
     ///Cache Logic
     private func loadFromCacheIfAvailable() -> [Article]? {
         do {
-            return try cacheStore.load(context: cacheContext)?.articles
+            return try cacheStore.load()
         } catch {
             Log.shared.error("Cache load failed",
                              category: .cache,
                              metadata: [
-                                "context": cacheContext,
                                 "error": error.localizedDescription
                              ])
             return nil
@@ -161,13 +160,24 @@ final class NewsViewModel: ObservableObject {
 
     private func saveToCache(articles: [Article]) {
         do {
-            try cacheStore.save(articles: articles, context: cacheContext)
+            try cacheStore.save(articles: articles)
         } catch {
             Log.shared.error("Cache save failed",
                              category: .cache,
                              metadata: [
-                                "context": cacheContext,
-                                "count": "\(articles.count)",
+                                "error": error.localizedDescription
+                             ])
+        }
+    }
+    
+    /// Store Recent History
+    func saveRecentlyViewed(_ article: Article) {
+        do {
+            try recentStore.prepend(article)
+        } catch {
+            Log.shared.error("Recent save failed",
+                             category: .recent,
+                             metadata: [
                                 "error": error.localizedDescription
                              ])
         }

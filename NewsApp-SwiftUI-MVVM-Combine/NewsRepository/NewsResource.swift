@@ -5,8 +5,6 @@
 //  Created by Vijay Raj Dixit on 29/01/26.
 //
 
-
-
 import Foundation
 
 final class NewsResource {

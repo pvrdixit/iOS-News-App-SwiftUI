@@ -11,6 +11,8 @@ public enum LogCategory: String {
     case core
     case network
     case cache
+    case recent
+    case bookmark
     case viewModel
     case ui
 }

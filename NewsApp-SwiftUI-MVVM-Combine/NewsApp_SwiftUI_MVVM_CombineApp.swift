@@ -31,7 +31,7 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
                 .tabItem { Label("Explore", systemImage: "safari") }
 
                 NavigationStack {
-                    PlaceholderTabView(title: "Bookmarks")
+                    BookmarksView()
                 }
                 .tabItem { Label("Bookmarks", systemImage: "bookmark") }
 
