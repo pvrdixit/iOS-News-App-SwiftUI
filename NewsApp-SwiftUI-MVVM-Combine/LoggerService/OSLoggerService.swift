@@ -10,8 +10,7 @@ import os
 
 public final class OSLoggerService: LoggerService {
     private let logger: Logger
-    public init(subsystem: String = Bundle.main.bundleIdentifier ?? "com.pvrdixit.NewsApp-SwiftUI-MVVM-Combine",
-                category: LogCategory = .default) {
+    public init(subsystem: String, category: LogCategory) {
         self.logger = Logger(subsystem: subsystem, category: category.rawValue)
     }
 

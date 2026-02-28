@@ -16,11 +16,14 @@ final class NewsDetailViewModel: ObservableObject {
     @Published var alertMessage: String? = nil
 
     let page = WebPage()
-    private let bookmarksStore = BookmarksStore()
+    private let bookmarksStore: BookmarkStore
+    private let logger: LoggerService
     private let article: Article
 
-    init(article: Article) {
+    init(article: Article, bookmarksStore: BookmarkStore, logger: LoggerService) {
         self.article = article
+        self.bookmarksStore = bookmarksStore
+        self.logger = logger
     }
 
     /// Validated URL (http/https + host)
@@ -73,12 +76,12 @@ final class NewsDetailViewModel: ObservableObject {
         } catch let urlError as URLError where urlError.code == .cancelled {
             return
         } catch {
-            Log.shared.error("Article load failed",
-                             category: .network,
-                             metadata: [
-                                "url": url.absoluteString,
-                                "error": error.localizedDescription
-                             ])
+            logger.error("Article load failed",
+                         category: .network,
+                         metadata: [
+                            "url": url.absoluteString,
+                            "error": error.localizedDescription
+                         ])
             alertMessage = processErrorForUI(from: error)
         }
     }
@@ -99,9 +102,9 @@ final class NewsDetailViewModel: ObservableObject {
         do {
             isBookmarked = try bookmarksStore.toggle(article)
         } catch {
-            Log.shared.error("Bookmark toggle failed",
-                             category: .bookmark,
-                             metadata: ["error": error.localizedDescription])
+            logger.error("Bookmark toggle failed",
+                         category: .bookmark,
+                         metadata: ["error": error.localizedDescription])
         }
     }
 }

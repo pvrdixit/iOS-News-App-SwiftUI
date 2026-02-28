@@ -8,13 +8,17 @@
 import SwiftUI
 
 struct BookmarksView: View {
-    @StateObject private var viewModel = BookmarksViewModel()
+    @ObservedObject var viewModel: BookmarksViewModel
     @State private var selectedArticle: Article?
+
+    init(viewModel: BookmarksViewModel) {
+        self.viewModel = viewModel
+    }
     
     var body: some View {
         VStack(spacing: 16) {
             Picker("Saved Content", selection: $viewModel.selectedSegment) {
-                ForEach(BookmarkPageSegment.allCases) { segment in
+                ForEach(BookmarksViewSegment.allCases) { segment in
                     Text(segment.rawValue).tag(segment)
                 }
             }
@@ -47,11 +51,14 @@ struct BookmarksView: View {
             viewModel.loadSelectedSegment()
         }
         .navigationDestination(item: $selectedArticle) { article in
-            NewsDetailView(article: article)
+            NewsDetailScene(article: article)
         }
     }
 }
 
 #Preview {
-    BookmarksView()
+    @MainActor in
+    let dependencies = AppDependencies()
+    return BookmarksView(viewModel: dependencies.makeBookmarksViewModel())
+        .environment(\.appDependencies, dependencies)
 }

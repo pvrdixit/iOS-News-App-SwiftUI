@@ -20,15 +20,20 @@ final class NewsViewModel: ObservableObject {
     @Published private(set) var loadingState: LoadingState = .idle
     @Published var alertMessage: String? = nil
 
-    private let resource: NewsResource
-    private let recentStore = RecentHistoryStore()
-    private let cacheStore = NewsCacheStore()
+    private let newsService: NewsService
+    private let recentHistory: RecentHistoryStore
+    private let newsCache: NewsCacheStore
+    private let logger: LoggerService
     private var paginationState = NewsPaginationState(pageSize: 5)
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
 
-    init(resource: NewsResource) {
-        self.resource = resource
+    init(
+        newsService: NewsService, recentHistory: RecentHistoryStore, newsCache: NewsCacheStore, logger: LoggerService) {
+        self.newsService = newsService
+        self.recentHistory = recentHistory
+        self.newsCache = newsCache
+        self.logger = logger
     }
     
     ///Fetch Articles
@@ -54,10 +59,7 @@ final class NewsViewModel: ObservableObject {
         }
 
         do {
-            let headlines = try await resource.fetchTopHeadlinesAsync(
-                page: page,
-                pageSize: paginationState.pageSize
-            )
+            let headlines = try await newsService.fetchTopHeadlines(page: page, pageSize: paginationState.pageSize)
 
             if isFirstPage {
                 if !shouldKeepExistingArticles(onFirstPageResponse: headlines.articles) {
@@ -88,22 +90,22 @@ final class NewsViewModel: ObservableObject {
 
         if isFirstPage, articles.isEmpty, let cachedArticles = loadFromCacheIfAvailable() {
             articles = cachedArticles
-            Log.shared.warning("First-page fetch failed, showing cached headlines",
-                               category: .cache,
-                               metadata: [
-                                "page": "\(page)",
-                                "cachedCount": "\(cachedArticles.count)",
-                                "error": error.localizedDescription
-                               ])
+            logger.warning("First-page fetch failed, showing cached headlines",
+                           category: .cache,
+                           metadata: [
+                            "page": "\(page)",
+                            "cachedCount": "\(cachedArticles.count)",
+                            "error": error.localizedDescription
+                           ])
             return nil
         }
 
-        Log.shared.error("Failed to fetch headlines",
-                         category: .network,
-                         metadata: [
-                            "page": "\(page)",
-                            "error": error.localizedDescription
-                         ])
+        logger.error("Failed to fetch headlines",
+                     category: .network,
+                     metadata: [
+                        "page": "\(page)",
+                        "error": error.localizedDescription
+                     ])
         return processErrorForUI(from: error)
     }
 
@@ -143,39 +145,39 @@ final class NewsViewModel: ObservableObject {
     ///Cache Logic
     private func loadFromCacheIfAvailable() -> [Article]? {
         do {
-            return try cacheStore.load()
+            return try newsCache.load()
         } catch {
-            Log.shared.error("Cache load failed",
-                             category: .cache,
-                             metadata: [
-                                "error": error.localizedDescription
-                             ])
+            logger.error("Cache load failed",
+                         category: .cache,
+                         metadata: [
+                            "error": error.localizedDescription
+                         ])
             return nil
         }
     }
 
     private func saveToCache(articles: [Article]) {
         do {
-            try cacheStore.save(articles: articles)
+            try newsCache.save(articles: articles)
         } catch {
-            Log.shared.error("Cache save failed",
-                             category: .cache,
-                             metadata: [
-                                "error": error.localizedDescription
-                             ])
+            logger.error("Cache save failed",
+                         category: .cache,
+                         metadata: [
+                            "error": error.localizedDescription
+                         ])
         }
     }
     
     /// Store Recent History
     func saveRecentlyViewed(_ article: Article) {
         do {
-            try recentStore.touch(article)
+            try recentHistory.touch(article)
         } catch {
-            Log.shared.error("Recent save failed",
-                             category: .recent,
-                             metadata: [
-                                "error": error.localizedDescription
-                             ])
+            logger.error("Recent save failed",
+                         category: .recent,
+                         metadata: [
+                            "error": error.localizedDescription
+                         ])
         }
     }
 

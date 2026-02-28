@@ -11,6 +11,8 @@ import Foundation
 
 struct ImageBuilderView: View {
     let imageURL: String?
+    @Environment(\.appDependencies) private var dependencies
+    
     let placeholderImage: some View = Image("newsPlaceholder")
         .resizable()
         .scaledToFit()
@@ -22,7 +24,7 @@ struct ImageBuilderView: View {
                     placeholderImage
                 }
                 .onFailure { error in
-                    Log.shared.warning("Image load failed: \(imageURL)", category: .ui)
+                    dependencies.logger.warning("Image load failed: \(imageURL) (\(error.localizedDescription))", category: .ui)
                 }
                 .resizable()
                 .scaledToFit()

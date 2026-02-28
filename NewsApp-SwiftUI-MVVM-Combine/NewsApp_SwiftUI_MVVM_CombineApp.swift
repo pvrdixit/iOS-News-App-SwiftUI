@@ -9,37 +9,43 @@ import SwiftUI
 
 @main
 struct NewsApp_SwiftUI_MVVM_CombineApp: App {
-
-    private let newsResource = NewsResource()
+    private let dependencies: AppDependencies
     @StateObject private var homeVM: NewsViewModel
-
+    @StateObject private var bookmarksVM: BookmarksViewModel
+    
+    @MainActor
     init() {
-        _homeVM = StateObject(wrappedValue: NewsViewModel(resource: NewsResource()))
+        let dependencies = AppDependencies()
+        self.dependencies = dependencies
+        _homeVM = StateObject(wrappedValue:
+                                dependencies.makeNewsViewModel()
+        )
+        
+        _bookmarksVM = StateObject(wrappedValue:
+                                    dependencies.makeBookmarksViewModel()
+        )
     }
-
+    
     var body: some Scene {
         WindowGroup {
             TabView {
-                NavigationStack {
-                    NewsView(viewModel: homeVM)
-                }
-                .tabItem { Label("Home", systemImage: "house") }
-
+                NavigationStack { NewsView(viewModel: homeVM) }
+                    .tabItem { Label("Home", systemImage: "house") }
+                
                 NavigationStack {
                     PlaceholderTabView(title: "Explore")
                 }
                 .tabItem { Label("Explore", systemImage: "safari") }
-
-                NavigationStack {
-                    BookmarksView()
-                }
-                .tabItem { Label("Bookmarks", systemImage: "bookmark") }
-
+                
+                NavigationStack { BookmarksView(viewModel: bookmarksVM) }
+                    .tabItem { Label("Bookmarks", systemImage: "bookmark") }
+                
                 NavigationStack {
                     PlaceholderTabView(title: "Settings")
                 }
                 .tabItem { Label("Settings", systemImage: "gearshape") }
             }
+            .environment(\.appDependencies, dependencies)
         }
     }
 }

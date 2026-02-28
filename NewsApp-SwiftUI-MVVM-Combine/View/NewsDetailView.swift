@@ -11,8 +11,8 @@ import WebKit
 struct NewsDetailView: View {
     @StateObject private var viewModel: NewsDetailViewModel
     
-    init(article: Article) {
-        _viewModel = StateObject(wrappedValue: NewsDetailViewModel(article: article))
+    init(viewModel: NewsDetailViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
     }
     
     /// Toolbar
@@ -85,5 +85,20 @@ private extension NewsDetailView {
 }
 
 #Preview {
-    NewsDetailView(article: Article(source: Source(id: "id", name: "name"), author: "author", title: "title", description: "description", url: "https://www.apple.com", urlToImage: "https://picsum.photos/seed/picsum/1800/900", publishedAt: "", content: "content"))
+    @MainActor in
+    let dependencies = AppDependencies()
+    let article = Article(
+        source: Source(id: "id", name: "Sample Source"),
+        author: "Sample Author",
+        title: "Sample Title",
+        description: "Sample Description",
+        url: "https://www.apple.com",
+        urlToImage: "https://picsum.photos/seed/picsum/1800/900",
+        publishedAt: "2026-02-28T10:00:00Z",
+        content: "Sample Content"
+    )
+
+    return NewsDetailView(
+        viewModel: dependencies.makeNewsDetailViewModel(article: article)
+    )
 }

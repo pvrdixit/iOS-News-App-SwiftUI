@@ -10,6 +10,10 @@ import SwiftUI
 struct NewsView: View {
     @ObservedObject var viewModel: NewsViewModel
     @State private var selectedArticle: Article?
+
+    init(viewModel: NewsViewModel) {
+        self.viewModel = viewModel
+    }
     
     /// NewsView
     var body: some View {
@@ -61,7 +65,7 @@ struct NewsView: View {
                        primaryRightButton: primaryAlertAction,
                        secondaryCancelButton: secondaryAlertAction)
             .navigationDestination(item: $selectedArticle) { article in
-                NewsDetailView(article: article)
+                NewsDetailScene(article: article)
             }
         }
     }
@@ -105,5 +109,8 @@ extension NewsView {
 }
 
 #Preview {
-    NewsView(viewModel: NewsViewModel(resource: NewsResource()))
+    @MainActor in
+    let dependencies = AppDependencies()
+    return NewsView(viewModel: dependencies.makeNewsViewModel())
+        .environment(\.appDependencies, dependencies)
 }

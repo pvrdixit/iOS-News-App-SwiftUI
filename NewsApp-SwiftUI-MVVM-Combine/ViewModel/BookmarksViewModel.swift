@@ -8,19 +8,25 @@
 import SwiftUI
 import Combine
 
-enum BookmarkPageSegment: String, CaseIterable, Identifiable {
+enum BookmarksViewSegment: String, CaseIterable, Identifiable {
     case bookmarks = "Bookmarks"
-    case recentHistory = "Recent History"
-
+    case recentHistory = "History"
     var id: String { rawValue }
 }
 
 @MainActor
 final class BookmarksViewModel: ObservableObject {
-    @Published var selectedSegment: BookmarkPageSegment = .bookmarks
+    @Published var selectedSegment: BookmarksViewSegment = .bookmarks
     @Published private(set) var displayedArticles: [Article] = []
-    private let recentStore = RecentHistoryStore()
-    private let bookmarksStore = BookmarksStore()
+    private let recentHistory: RecentHistoryStore
+    private let bookmarks: BookmarkStore
+    private let logger: LoggerService
+
+    init(recentHistory: RecentHistoryStore, bookmarks: BookmarkStore, logger: LoggerService) {
+        self.recentHistory = recentHistory
+        self.bookmarks = bookmarks
+        self.logger = logger
+    }
   
     var emptyStateTitle: String {
         switch selectedSegment {
@@ -51,27 +57,27 @@ final class BookmarksViewModel: ObservableObject {
     /// Store Recent History
     func saveRecentlyViewed(_ article: Article) {
         do {
-            try recentStore.touch(article)
+            try recentHistory.touch(article)
             if selectedSegment == .recentHistory {
-                displayedArticles = try recentStore.load()
+                displayedArticles = try recentHistory.load()
             }
         } catch {
-            Log.shared.error("Recent save failed",
-                             category: .recent,
-                             metadata: [
-                                "error": error.localizedDescription
-                             ])
+            logger.error("Recent save failed",
+                         category: .recent,
+                         metadata: [
+                            "error": error.localizedDescription
+                         ])
         }
     }
 }
 
 private extension BookmarksViewModel {
-    func articles(for segment: BookmarkPageSegment) throws -> [Article] {
+    func articles(for segment: BookmarksViewSegment) throws -> [Article] {
         switch segment {
         case .bookmarks:
-            return try bookmarksStore.load()
+            return try bookmarks.load()
         case .recentHistory:
-            return try recentStore.load()
+            return try recentHistory.load()
         }
     }
 }
