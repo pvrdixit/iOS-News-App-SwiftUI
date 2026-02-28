@@ -47,6 +47,22 @@ final class BookmarksViewModel: ObservableObject {
             displayedArticles = []
         }
     }
+    
+    /// Store Recent History
+    func saveRecentlyViewed(_ article: Article) {
+        do {
+            try recentStore.touch(article)
+            if selectedSegment == .recentHistory {
+                displayedArticles = try recentStore.load()
+            }
+        } catch {
+            Log.shared.error("Recent save failed",
+                             category: .recent,
+                             metadata: [
+                                "error": error.localizedDescription
+                             ])
+        }
+    }
 }
 
 private extension BookmarksViewModel {

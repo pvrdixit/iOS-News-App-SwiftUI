@@ -9,8 +9,8 @@ import SwiftUI
 
 struct BookmarksView: View {
     @StateObject private var viewModel = BookmarksViewModel()
-    @State private var selectedURL: URL?
-
+    @State private var selectedArticle: Article?
+    
     var body: some View {
         VStack(spacing: 16) {
             Picker("Saved Content", selection: $viewModel.selectedSegment) {
@@ -20,33 +20,25 @@ struct BookmarksView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-
-            Group {
-                if viewModel.displayedArticles.isEmpty {
-                    EmptyStateView(
-                        title: viewModel.emptyStateTitle,
-                        message: viewModel.emptyStateMessage,
-                        buttonTitle: nil,
-                        action: nil
-                    )
-                } else {
-                    List {
-                        ForEach(viewModel.displayedArticles) { article in
-                            NewsViewListItem(
-                                authorName: article.author ?? "",
-                                date: article.publishedDateToDisplay,
-                                headline: article.title,
-                                imageURL: article.urlToImage
-                            )
-                            .onTapGesture {
-                                if let url = URL(string: article.url) {
-                                    selectedURL = url
-                                }
-                            }
+            
+            if viewModel.displayedArticles.isEmpty {
+                EmptyStateView(title: viewModel.emptyStateTitle, message: viewModel.emptyStateMessage, buttonTitle: nil, action: nil)
+            } else {
+                List {
+                    ForEach(viewModel.displayedArticles) { article in
+                        NewsViewListItem(
+                            authorName: article.author ?? "",
+                            date: article.publishedDateToDisplay,
+                            headline: article.title,
+                            imageURL: article.urlToImage
+                        )
+                        .onTapGesture {
+                            selectedArticle = article
+                            viewModel.saveRecentlyViewed(article)
                         }
                     }
-                    .listStyle(.plain)
                 }
+                .listStyle(.plain)
             }
         }
         .navigationTitle("Bookmarks")
@@ -54,8 +46,8 @@ struct BookmarksView: View {
         .task(id: viewModel.selectedSegment) {
             viewModel.loadSelectedSegment()
         }
-        .navigationDestination(item: $selectedURL) { url in
-            NewsDetailView(url: url)
+        .navigationDestination(item: $selectedArticle) { article in
+            NewsDetailView(article: article)
         }
     }
 }

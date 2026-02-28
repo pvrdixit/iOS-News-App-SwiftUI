@@ -17,21 +17,28 @@ final class RecentHistoryStore {
     }
 
     func load() throws -> [Article] {
-        try store.load() ?? []
-    }
-
-    func save(_ articles: [Article]) throws {
-        try store.save(Array(articles.prefix(maxItems)))
-    }
-
-    /// Minimal: add newest at the front and trim, Expensive insert is fine as Max is 30
-    func prepend(_ article: Article) throws {
-        var items = try load()
-        items.insert(article, at: 0)
-        if items.count > maxItems {
-            items.removeLast(items.count - maxItems)
+        let items = (try store.load()) ?? []
+        if items.count <= maxItems {
+            return items
         }
-        try store.save(items)
+        return Array(items.prefix(maxItems))
+    }
+
+    /// MRU-first + LRU eviction (maxItems)
+    func touch(_ article: Article) throws {
+        var recentArticles = try load()
+
+        if let idx = recentArticles.firstIndex(where: { $0.id == article.id }) {
+            recentArticles.remove(at: idx)
+        }
+
+        recentArticles.insert(article, at: 0)
+
+        if recentArticles.count > maxItems {
+            recentArticles.removeLast(recentArticles.count - maxItems)
+        }
+
+        try store.save(recentArticles)
     }
 
     func clear() throws {

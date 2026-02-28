@@ -9,8 +9,8 @@ import SwiftUI
 
 struct NewsView: View {
     @ObservedObject var viewModel: NewsViewModel
-    @State private var selectedURL: URL?
-
+    @State private var selectedArticle: Article?
+    
     /// NewsView
     var body: some View {
         NavigationStack {
@@ -21,10 +21,8 @@ struct NewsView: View {
                                      headline: article.title,
                                      imageURL: article.urlToImage)
                     .onTapGesture {
-                        if let url = URL(string: article.url) {
-                            selectedURL = url
-                            viewModel.saveRecentlyViewed(article)
-                        }
+                        selectedArticle = article
+                        viewModel.saveRecentlyViewed(article)
                     }
                     .task(id: article.id) {
                         await viewModel.loadMoreIfNeeded(currentItem: article)
@@ -52,7 +50,7 @@ struct NewsView: View {
             }
             .task {
                 if viewModel.articles.isEmpty {
-                     await viewModel.fetchNews()
+                    await viewModel.fetchNews()
                 }
             }
             .refreshable {
@@ -62,8 +60,8 @@ struct NewsView: View {
                        isPresented: errorAlertBinding,
                        primaryRightButton: primaryAlertAction,
                        secondaryCancelButton: secondaryAlertAction)
-            .navigationDestination(item: $selectedURL) { url in
-                NewsDetailView(url: url)
+            .navigationDestination(item: $selectedArticle) { article in
+                NewsDetailView(article: article)
             }
         }
     }

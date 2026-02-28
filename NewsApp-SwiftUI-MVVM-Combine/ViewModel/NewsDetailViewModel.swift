@@ -12,22 +12,55 @@ import WebKit
 @MainActor
 final class NewsDetailViewModel: ObservableObject {
     @Published private(set) var isLoading: Bool = false
+    @Published private(set) var isBookmarked: Bool = false
     @Published var alertMessage: String? = nil
-    
+
     let page = WebPage()
-    private var currentURL: URL?
+    private let bookmarksStore = BookmarksStore()
+    private let article: Article
+
+    init(article: Article) {
+        self.article = article
+    }
+
+    /// Validated URL (http/https + host)
+    var url: URL? {
+        guard
+            let url = URL(string: article.url),
+            let scheme = url.scheme?.lowercased(),
+            ["http", "https"].contains(scheme),
+            url.host != nil
+        else { return nil }
+
+        return url
+    }
+
     var showEmptyState: Bool {
         alertMessage != nil && !isLoading
     }
-    
-    func load(url: URL) async {
+
+    /// No-arg load used by the View: validates URL then loads or sets alert
+    func load() async {
+        guard let url else {
+            alertMessage = "We couldn’t open this article. The link may be invalid or the article may no longer be available."
+            return
+        }
+        await load(url)
+    }
+
+    /// No-arg retry used by the View
+    func retry() async {
+        await load()
+    }
+
+    func load(_ url: URL) async {
         guard !isLoading else { return }
-        
-        currentURL = url
+
+        isBookmarked = bookmarksStore.isBookmarked(article.url)
         isLoading = true
         alertMessage = nil
-        defer { isLoading = false}
-        
+        defer { isLoading = false }
+
         do {
             for try await event in page.load(url) {
                 if event == .committed || event == .finished {
@@ -50,11 +83,6 @@ final class NewsDetailViewModel: ObservableObject {
         }
     }
     
-    func retry() async {
-        guard let currentURL else { return }
-        await load(url: currentURL)
-    }
-    
     func dismissError() {
         alertMessage = nil
     }
@@ -64,6 +92,16 @@ final class NewsDetailViewModel: ObservableObject {
             return NavigationErrorMapper.message(from: navigationError, viewType: .newsDetailView)
         } else {
             return NetworkErrorMapper.message(from: error, viewType: .newsDetailView)
+        }
+    }
+
+    func toggleBookmark() {
+        do {
+            isBookmarked = try bookmarksStore.toggle(article)
+        } catch {
+            Log.shared.error("Bookmark toggle failed",
+                             category: .bookmark,
+                             metadata: ["error": error.localizedDescription])
         }
     }
 }

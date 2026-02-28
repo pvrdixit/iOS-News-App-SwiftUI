@@ -8,7 +8,7 @@
 import Foundation
 
 struct Article: Codable, Identifiable {
-    var id: String { url }
+    var id: String { url } /// for Identifiable
     let source: Source
     let author: String?
     let title: String
@@ -28,4 +28,10 @@ struct Article: Codable, Identifiable {
 
         return formatter.string(from: date)
     }
+}
+
+/// For passing it as navigation item, custom Hasher reduces load
+extension Article: Hashable {
+    static func == (lhs: Article, rhs: Article) -> Bool { lhs.url == rhs.url }
+    func hash(into hasher: inout Hasher) { hasher.combine(url) }
 }

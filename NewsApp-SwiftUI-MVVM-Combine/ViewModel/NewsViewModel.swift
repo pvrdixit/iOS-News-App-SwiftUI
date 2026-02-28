@@ -33,8 +33,6 @@ final class NewsViewModel: ObservableObject {
     
     ///Fetch Articles
     func fetchNews(_ state: LoadingState = .isLoading) async {
-        guard loadingState == .idle else { return }
-
         await fetchPage(page: 1, isFirstPage: true, state)
     }
     
@@ -51,9 +49,7 @@ final class NewsViewModel: ObservableObject {
         defer {
             loadingState = .idle
             if let deferredAlertMessage {
-                DispatchQueue.main.async { [weak self] in
-                    self?.alertMessage = deferredAlertMessage
-                }
+                alertMessage = deferredAlertMessage
             }
         }
 
@@ -173,7 +169,7 @@ final class NewsViewModel: ObservableObject {
     /// Store Recent History
     func saveRecentlyViewed(_ article: Article) {
         do {
-            try recentStore.prepend(article)
+            try recentStore.touch(article)
         } catch {
             Log.shared.error("Recent save failed",
                              category: .recent,

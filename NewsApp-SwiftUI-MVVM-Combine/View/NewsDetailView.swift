@@ -9,13 +9,35 @@ import SwiftUI
 import WebKit
 
 struct NewsDetailView: View {
-    @StateObject private var viewModel = NewsDetailViewModel()
-    let url: URL
+    @StateObject private var viewModel: NewsDetailViewModel
+    
+    init(article: Article) {
+        _viewModel = StateObject(wrappedValue: NewsDetailViewModel(article: article))
+    }
+    
+    /// Toolbar
+    @ToolbarContentBuilder
+    private var toolBarSetup: some ToolbarContent {
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button {
+                viewModel.toggleBookmark()
+            } label: {
+                Image(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark")
+            }
 
+            if let url = viewModel.url {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+    }
+    
     /// NewsDetailView
     var body: some View {
         WebView(viewModel.page)
             .ignoresSafeArea()
+            .toolbar { toolBarSetup }
             .overlay {
                 if viewModel.isLoading {
                     ProgressView()
@@ -30,8 +52,8 @@ struct NewsDetailView: View {
                     )
                 }
             }
-            .task(id: url) {
-                await viewModel.load(url: url)
+            .task {
+                await viewModel.load()
             }
             .showAlert(
                 message: errorAlertMessage,
@@ -63,5 +85,5 @@ private extension NewsDetailView {
 }
 
 #Preview {
-    NewsDetailView(url: URL(string: "https://www.apple.com")!)
+    NewsDetailView(article: Article(source: Source(id: "id", name: "name"), author: "author", title: "title", description: "description", url: "https://www.apple.com", urlToImage: "https://picsum.photos/seed/picsum/1800/900", publishedAt: "", content: "content"))
 }
