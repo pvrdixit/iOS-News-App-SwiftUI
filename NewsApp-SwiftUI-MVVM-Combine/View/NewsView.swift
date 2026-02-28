@@ -17,7 +17,6 @@ struct NewsView: View {
     
     /// NewsView
     var body: some View {
-        NavigationStack {
             List {
                 ForEach(viewModel.articles) { article in
                     NewsViewListItem(authorName: article.author ?? "",
@@ -68,7 +67,6 @@ struct NewsView: View {
                 NewsDetailScene(article: article)
             }
         }
-    }
 }
 
 /// Error Alerts
