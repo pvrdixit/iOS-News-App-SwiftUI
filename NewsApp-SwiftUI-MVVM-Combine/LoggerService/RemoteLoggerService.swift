@@ -10,7 +10,7 @@ public final class RemoteLoggerService: LoggerService {
     public init() {}
 
     public func log(_ level: LogLevel,
-                    _ message: @autoclosure () -> String,
+                    _ message: () -> String,
                     category: LogCategory,
                     metadata: [String: String]?,
                     file: String,

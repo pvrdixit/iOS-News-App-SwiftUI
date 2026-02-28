@@ -9,27 +9,16 @@ import Foundation
 
 final class NewsResource: NewsService {
     private let service: NetworkService
-    private let logger: LoggerService
 
-    init(service: NetworkService, logger: LoggerService) {
+    init(service: NetworkService) {
         self.service = service
-        self.logger = logger
     }
 
     /// Fetch paginated top headlines using async/await.
     func fetchTopHeadlines(page: Int = 1, pageSize: Int = 20) async throws -> Headlines {
         let safePage = max(1, page)
         let safePageSize = min(max(1, pageSize), 100)
-        let country = APIConstants.Default.country
-
         guard let url = makeTopHeadlinesURL(page: safePage, pageSize: safePageSize) else {
-            logger.error("Failed to build top-headlines URL",
-                         category: .network,
-                         metadata: [
-                            "country": country,
-                            "page": "\(safePage)",
-                            "pageSize": "\(safePageSize)"
-                         ])
             throw URLError(.badURL)
         }
 

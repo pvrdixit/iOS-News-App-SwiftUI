@@ -51,6 +51,12 @@ final class BookmarksViewModel: ObservableObject {
             displayedArticles = try articles(for: selectedSegment)
         } catch {
             displayedArticles = []
+            logger.error("Segment load failed",
+                         category: logCategory(for: selectedSegment),
+                         metadata: [
+                            "segment": selectedSegment.rawValue,
+                            "error": error.localizedDescription
+                         ])
         }
     }
     
@@ -72,6 +78,15 @@ final class BookmarksViewModel: ObservableObject {
 }
 
 private extension BookmarksViewModel {
+    func logCategory(for segment: BookmarksViewSegment) -> LogCategory {
+        switch segment {
+        case .bookmarks:
+            return .bookmark
+        case .recentHistory:
+            return .recent
+        }
+    }
+
     func articles(for segment: BookmarksViewSegment) throws -> [Article] {
         switch segment {
         case .bookmarks:

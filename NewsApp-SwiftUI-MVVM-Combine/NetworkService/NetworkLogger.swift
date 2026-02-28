@@ -10,8 +10,9 @@ import Foundation
 
 enum NetworkLogger {
 
-    static func logDecodingError(_ error: DecodingError, logger: LoggerService) {
-        logger.error("Decoding failed", category: .network, metadata: decodingMetadata(error))
+    static func metadata(for error: Error) -> [String: String]? {
+        guard let decodingError = error as? DecodingError else { return nil }
+        return decodingMetadata(decodingError)
     }
     
     private static func decodingMetadata(_ error: DecodingError) -> [String: String] {

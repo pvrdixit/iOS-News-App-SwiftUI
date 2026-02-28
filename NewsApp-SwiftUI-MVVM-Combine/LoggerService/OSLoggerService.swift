@@ -9,21 +9,22 @@ import Foundation
 import os
 
 public final class OSLoggerService: LoggerService {
-    private let logger: Logger
-    public init(subsystem: String, category: LogCategory) {
-        self.logger = Logger(subsystem: subsystem, category: category.rawValue)
+    private let subsystem: String
+
+    public init(subsystem: String) {
+        self.subsystem = subsystem
     }
 
     public func log(_ level: LogLevel,
-                    _ message: @autoclosure () -> String,
+                    _ message: () -> String,
                     category: LogCategory,
                     metadata: [String: String]?,
                     file: String,
                     function: String,
                     line: Int) {
-        // Single logger instance; category is appended to message (simple).
+        let logger = Logger(subsystem: subsystem, category: category.rawValue)
         let metadataText = Self.render(metadata)
-        let rendered = "[\(category)] \(message())\(metadataText) (\(file):\(line) \(function))"
+        let rendered = "\(message())\(metadataText) (\(file):\(line) \(function))"
         logger.log(level: level.osType, "\(rendered, privacy: .public)")
     }
 
@@ -34,5 +35,16 @@ public final class OSLoggerService: LoggerService {
             .map { "\($0.key)=\($0.value)" }
             .joined(separator: " ")
         return " [\(renderedPairs)]"
+    }
+}
+
+private extension LogLevel {
+    var osType: OSLogType {
+        switch self {
+        case .debug:   return .debug
+        case .info:    return .info
+        case .warning: return .default
+        case .error:   return .error
+        }
     }
 }

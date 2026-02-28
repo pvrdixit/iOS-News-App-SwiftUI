@@ -13,17 +13,15 @@ final class HTTPUtility: NetworkService {
 
     private let session: URLSession
     private let decoder: JSONDecoder
-    private let logger: LoggerService
 
     /// Default init with a standard request/resource timeout.
-    init(timeout: TimeInterval, logger: LoggerService) {
+    init(timeout: TimeInterval) {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = timeout
         config.timeoutIntervalForResource = timeout
 
         self.session = URLSession(configuration: config)
         self.decoder = JSONDecoder()
-        self.logger = logger
     }
 
     /// Make request, validate response, decode (async/await).
@@ -37,11 +35,6 @@ final class HTTPUtility: NetworkService {
             throw URLError(.badServerResponse)
         }
 
-        do {
-            return try decoder.decode(T.self, from: data)
-        } catch let decodingError as DecodingError {
-            NetworkLogger.logDecodingError(decodingError, logger: logger)
-            throw decodingError
-        }
+        return try decoder.decode(T.self, from: data)
     }
 }

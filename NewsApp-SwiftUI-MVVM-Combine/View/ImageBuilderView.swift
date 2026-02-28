@@ -11,7 +11,6 @@ import Foundation
 
 struct ImageBuilderView: View {
     let imageURL: String?
-    @Environment(\.appDependencies) private var dependencies
     
     let placeholderImage: some View = Image("newsPlaceholder")
         .resizable()
@@ -22,9 +21,6 @@ struct ImageBuilderView: View {
             KFImage(URL(string: imageURL))
                 .placeholder {
                     placeholderImage
-                }
-                .onFailure { error in
-                    dependencies.logger.warning("Image load failed: \(imageURL) (\(error.localizedDescription))", category: .ui)
                 }
                 .resizable()
                 .scaledToFit()

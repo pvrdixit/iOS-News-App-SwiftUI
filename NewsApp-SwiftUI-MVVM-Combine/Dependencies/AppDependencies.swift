@@ -7,6 +7,30 @@
 
 import Foundation
 
+enum AppRuntimeEnvironment {
+    case development
+    case production
+
+    static var current: AppRuntimeEnvironment {
+        #if DEBUG
+        return .development
+        #else
+        return .production
+        #endif
+    }
+}
+
+enum LoggerServiceFactory {
+    static func make(for environment: AppRuntimeEnvironment, subsystem: String = Bundle.main.bundleIdentifier ?? "NewsApp") -> LoggerService {
+        switch environment {
+        case .development:
+            return OSLoggerService(subsystem: subsystem)
+        case .production:
+            return RemoteLoggerService() /// Just to define scope, not implemented
+        }
+    }
+}
+
 final class AppDependencies {
     /// Always available
     let logger: LoggerService
@@ -16,19 +40,17 @@ final class AppDependencies {
     lazy var recentHistory: RecentHistoryStore = JSONRecentHistoryStore(maxItems: 30)
     lazy var newsCache: NewsCacheStore = JSONNewsCacheStore()
 
-    /// Shared infrastructure (depends on logger)
-    lazy var networkService: NetworkService = HTTPUtility(timeout: 8.0, logger: logger)
+    /// Shared infrastructure
+    lazy var networkService: NetworkService = HTTPUtility(timeout: 8.0)
 
     /// Higher-level services (depend on other services)
-    lazy var newsService: NewsService = NewsResource(service: networkService, logger: logger)
+    lazy var newsService: NewsService = NewsResource(service: networkService)
 
     init(
-        logger: LoggerService = OSLoggerService(
-            subsystem: Bundle.main.bundleIdentifier ?? "NewsApp",
-            category: .default
-        )
+        environment: AppRuntimeEnvironment = .current,
+        logger: LoggerService? = nil
     ) {
-        self.logger = logger
+        self.logger = logger ?? LoggerServiceFactory.make(for: environment)
     }
 
     @MainActor

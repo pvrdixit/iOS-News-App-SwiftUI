@@ -29,19 +29,50 @@ final class NewsViewModel: ObservableObject {
     private var hasLoadedFirstPageFromNetwork = false
 
     init(
-        newsService: NewsService, recentHistory: RecentHistoryStore, newsCache: NewsCacheStore, logger: LoggerService) {
+        newsService: NewsService,
+        recentHistory: RecentHistoryStore,
+        newsCache: NewsCacheStore,
+        logger: LoggerService
+    ) {
         self.newsService = newsService
         self.recentHistory = recentHistory
         self.newsCache = newsCache
         self.logger = logger
     }
-    
-    ///Fetch Articles
+
+    /// Fetch articles
     func fetchNews(_ state: LoadingState = .isLoading) async {
         await fetchPage(page: 1, isFirstPage: true, state)
     }
+
+    /// Pagination trigger
+    func loadMoreIfNeeded(currentItem: Article) async {
+        guard hasLoadedFirstPageFromNetwork,
+              shouldLoadMore(after: currentItem),
+              let nextPage = paginationState.nextPageCandidate
+        else { return }
+
+        await fetchPage(page: nextPage, isFirstPage: false)
+    }
     
-    private func fetchPage(page: Int, isFirstPage: Bool, _ state: LoadingState = .isLoading) async {
+    /// Store recent history
+    func saveRecentlyViewed(_ article: Article) {
+        do {
+            try recentHistory.touch(article)
+        } catch {
+            logStorageError("Recent save failed", category: .recent, error: error)
+        }
+    }
+
+    func dismissError() {
+        alertMessage = nil
+    }
+}
+
+/// Private Helpers
+/// Fetch flow and network error handling
+private extension NewsViewModel {
+    func fetchPage(page: Int, isFirstPage: Bool, _ state: LoadingState = .isLoading) async {
         guard loadingState == .idle else { return }
 
         loadingState = state
@@ -60,65 +91,37 @@ final class NewsViewModel: ObservableObject {
 
         do {
             let headlines = try await newsService.fetchTopHeadlines(page: page, pageSize: paginationState.pageSize)
-
-            if isFirstPage {
-                if !shouldKeepExistingArticles(onFirstPageResponse: headlines.articles) {
-                    articles = paginationState.applyFirstPage(
-                        articles: headlines.articles,
-                        totalResults: headlines.totalResults
-                    )
-                }
-                hasLoadedFirstPageFromNetwork = true
-            } else {
-                articles = paginationState.applyNextPage(
-                    existing: articles,
-                    incoming: headlines.articles,
-                    totalResults: headlines.totalResults,
-                    nextPage: page
-                )
-            }
-            saveToCache(articles: articles)
+            applyFetchedHeadlines(headlines, page: page, isFirstPage: isFirstPage)
         } catch {
             deferredAlertMessage = resolveFetchError(error, page: page, isFirstPage: isFirstPage)
         }
     }
 
-    /// log error and get alert message
-    private func resolveFetchError(_ error: Error, page: Int, isFirstPage: Bool) -> String? {
-        if error is CancellationError { return nil }
-        if let urlError = error as? URLError, urlError.code == .cancelled { return nil }
-
-        if isFirstPage, articles.isEmpty, let cachedArticles = loadFromCacheIfAvailable() {
-            articles = cachedArticles
-            logger.warning("First-page fetch failed, showing cached headlines",
-                           category: .cache,
-                           metadata: [
-                            "page": "\(page)",
-                            "cachedCount": "\(cachedArticles.count)",
-                            "error": error.localizedDescription
-                           ])
-            return nil
+    func applyFetchedHeadlines(_ headlines: Headlines, page: Int, isFirstPage: Bool) {
+        if isFirstPage {
+            if !shouldKeepExistingArticles(onFirstPageResponse: headlines.articles) {
+                articles = paginationState.applyFirstPage(
+                    articles: headlines.articles,
+                    totalResults: headlines.totalResults
+                )
+            }
+            hasLoadedFirstPageFromNetwork = true
+        } else {
+            articles = paginationState.applyNextPage(
+                existing: articles,
+                incoming: headlines.articles,
+                totalResults: headlines.totalResults,
+                nextPage: page
+            )
         }
 
-        logger.error("Failed to fetch headlines",
-                     category: .network,
-                     metadata: [
-                        "page": "\(page)",
-                        "error": error.localizedDescription
-                     ])
-        return processErrorForUI(from: error)
+        saveToCache(articles: articles)
     }
+}
 
-    ///Pagination Logic
-    func loadMoreIfNeeded(currentItem: Article) async {
-        guard hasLoadedFirstPageFromNetwork,
-              shouldLoadMore(after: currentItem),
-              let nextPage = paginationState.nextPageCandidate
-        else { return }
-        await fetchPage(page: nextPage, isFirstPage: false)
-    }
-    
-    private func shouldLoadMore(after article: Article) -> Bool {
+/// Pagination helpers
+private extension NewsViewModel {
+    func shouldLoadMore(after article: Article) -> Bool {
         guard loadingState == .idle, paginationState.canLoadMore else { return false }
         guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return false }
 
@@ -126,7 +129,7 @@ final class NewsViewModel: ObservableObject {
         return index >= triggerIndex
     }
 
-    private func shouldKeepExistingArticles(onFirstPageResponse incoming: [Article]) -> Bool {
+    func shouldKeepExistingArticles(onFirstPageResponse incoming: [Article]) -> Bool {
         guard !articles.isEmpty, !incoming.isEmpty else { return false }
 
         if articles.first?.id == incoming.first?.id {
@@ -141,52 +144,77 @@ final class NewsViewModel: ObservableObject {
 
         return existingTopFive == incomingTopFive
     }
+}
+
+/// ResolveError -> Log + UI error mapping helper
+private extension NewsViewModel {
+    func resolveFetchError(_ error: Error, page: Int, isFirstPage: Bool) -> String? {
+        if error is CancellationError { return nil }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return nil }
+
+        if isFirstPage, articles.isEmpty, let cachedArticles = loadFromCacheIfAvailable() {
+            articles = cachedArticles
+            logger.warning(
+                "First-page fetch failed, showing cached headlines",
+                category: .cache,
+                metadata: [
+                    "page": "\(page)",
+                    "cachedCount": "\(cachedArticles.count)",
+                    "error": error.localizedDescription
+                ]
+            )
+            return nil
+        }
+
+        var metadata: [String: String] = [
+            "page": "\(page)",
+            "error": error.localizedDescription
+        ]
+        if let decodingMetadata = NetworkLogger.metadata(for: error) {
+            metadata.merge(decodingMetadata, uniquingKeysWith: { current, _ in current })
+        }
+
+        logger.error(
+            "Failed to fetch headlines",
+            category: .network,
+            metadata: metadata
+        )
+
+        return processErrorForUI(from: error)
+    }
     
-    ///Cache Logic
-    private func loadFromCacheIfAvailable() -> [Article]? {
+    func processErrorForUI(from error: Error) -> String {
+        NetworkErrorMapper.message(from: error, viewType: .newsView)
+    }
+}
+
+
+/// Cache and storage helpers
+private extension NewsViewModel {
+    func loadFromCacheIfAvailable() -> [Article]? {
         do {
             return try newsCache.load()
         } catch {
-            logger.error("Cache load failed",
-                         category: .cache,
-                         metadata: [
-                            "error": error.localizedDescription
-                         ])
+            logStorageError("Cache load failed", category: .cache, error: error)
             return nil
         }
     }
 
-    private func saveToCache(articles: [Article]) {
+    func saveToCache(articles: [Article]) {
         do {
             try newsCache.save(articles: articles)
         } catch {
-            logger.error("Cache save failed",
-                         category: .cache,
-                         metadata: [
-                            "error": error.localizedDescription
-                         ])
-        }
-    }
-    
-    /// Store Recent History
-    func saveRecentlyViewed(_ article: Article) {
-        do {
-            try recentHistory.touch(article)
-        } catch {
-            logger.error("Recent save failed",
-                         category: .recent,
-                         metadata: [
-                            "error": error.localizedDescription
-                         ])
+            logStorageError("Cache save failed", category: .cache, error: error)
         }
     }
 
-    ///Error flow
-    private func processErrorForUI(from error: Error) -> String {
-        NetworkErrorMapper.message(from: error, viewType: .newsView)
-    }
-    
-    func dismissError() {
-        alertMessage = nil
+    func logStorageError(_ message: String, category: LogCategory, error: Error) {
+        logger.error(
+            message,
+            category: category,
+            metadata: [
+                "error": error.localizedDescription
+            ]
+        )
     }
 }
