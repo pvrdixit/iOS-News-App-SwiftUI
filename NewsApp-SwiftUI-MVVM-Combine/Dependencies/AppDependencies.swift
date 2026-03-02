@@ -73,6 +73,16 @@ final class AppDependencies {
     }
 
     @MainActor
+    func makeSettingsViewModel() -> SettingsViewModel {
+        SettingsViewModel(
+            newsCache: newsCache,
+            bookmarksStore: bookmarks,
+            recentHistory: recentHistory,
+            logger: logger
+        )
+    }
+
+    @MainActor
     func makeNewsDetailViewModel(article: Article) -> NewsDetailViewModel {
         NewsDetailViewModel(
             article: article,

@@ -17,65 +17,70 @@ struct NewsView: View {
     
     /// NewsView
     var body: some View {
-            List {
-                ForEach(viewModel.articles) { article in
-                    NewsViewListItem(authorName: article.author ?? "",
-                                     date: article.publishedDateToDisplay,
-                                     headline: article.title,
-                                     imageURL: article.urlToImage)
-                    .onTapGesture {
-                        selectedArticle = article
-                        viewModel.saveRecentlyViewed(article)
-                    }
-                    .task(id: article.id) {
-                        await viewModel.loadMoreIfNeeded(currentItem: article)
-                    }
+        List {
+            ForEach(viewModel.articles) { article in
+                NewsViewListItem(authorName: article.author ?? "",
+                                 date: article.publishedDateToDisplay,
+                                 headline: article.title,
+                                 imageURL: article.urlToImage)
+                .onTapGesture {
+                    selectedArticle = article
+                    viewModel.saveRecentlyViewed(article)
                 }
-            }
-            .listStyle(.plain)
-            .navigationTitle("News")
-            .navigationBarTitleDisplayMode(.inline)
-            .overlay {
-                if viewModel.loadingState == .isLoading {
-                    ProgressView()
-                } else if showEmptyState {
-                    EmptyStateView(
-                        title: "Couldn't load news",
-                        message: errorAlertMessage,
-                        buttonTitle: "Try again",
-                        action: {
-                            Task {
-                                await viewModel.fetchNews(.isLoading)
-                            }
-                        }
-                    )
+                .task(id: article.id) {
+                    await viewModel.loadMoreIfNeeded(currentItem: article)
                 }
-            }
-            .task {
-                if viewModel.articles.isEmpty {
-                    await viewModel.fetchNews()
-                }
-            }
-            .refreshable {
-                await viewModel.fetchNews(.isRefreshing)
-            }
-            .showAlert(message: errorAlertMessage,
-                       isPresented: errorAlertBinding,
-                       primaryRightButton: primaryAlertAction,
-                       secondaryCancelButton: secondaryAlertAction)
-            .navigationDestination(item: $selectedArticle) { article in
-                NewsDetailScene(article: article)
             }
         }
+        .listStyle(.plain)
+        .navigationTitle("News")
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if viewModel.loadingState == .isLoading {
+                ProgressView()
+            } else if showEmptyState {
+                EmptyStateView(
+                    title: emptyStateTitle,
+                    message: emptyStateMessage,
+                    buttonTitle: "Try again",
+                    action: {
+                        Task {
+                            await viewModel.fetchNews(.isLoading)
+                        }
+                    }
+                )
+            }
+        }
+        .task {
+            if viewModel.articles.isEmpty {
+                await viewModel.fetchNews()
+            }
+        }
+        .refreshable {
+            await viewModel.fetchNews(.isRefreshing)
+        }
+        .showAlert(message: errorAlertMessage,
+                   isPresented: errorAlertBinding,
+                   primaryRightButton: primaryAlertAction,
+                   secondaryCancelButton: secondaryAlertAction)
+        .navigationDestination(item: $selectedArticle) { article in
+            NewsDetailScene(article: article)
+        }
+    }
 }
 
 /// Error Alerts
 extension NewsView {
     private var errorAlertMessage: String { viewModel.alertMessage ?? "Unable to fetch news, please try again" }
+    private var emptyStateTitle: String {
+        viewModel.alertMessage == nil ? "No news available" : "Couldn't load news"
+    }
+    private var emptyStateMessage: String {
+        viewModel.alertMessage ?? "No articles are available right now. Please try again."
+    }
     private var showEmptyState: Bool {
         viewModel.articles.isEmpty &&
-        viewModel.loadingState == .idle &&
-        viewModel.alertMessage != nil
+        viewModel.loadingState == .idle
     }
 
     private var errorAlertBinding: Binding<Bool> {

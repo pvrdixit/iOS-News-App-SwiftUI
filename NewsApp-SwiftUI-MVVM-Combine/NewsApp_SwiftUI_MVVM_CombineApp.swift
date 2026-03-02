@@ -12,6 +12,7 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
     private let dependencies: AppDependencies
     @StateObject private var homeVM: NewsViewModel
     @StateObject private var bookmarksVM: BookmarksViewModel
+    @StateObject private var settingsVM: SettingsViewModel
     
     @MainActor
     init() {
@@ -23,6 +24,10 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
         
         _bookmarksVM = StateObject(wrappedValue:
                                     dependencies.makeBookmarksViewModel()
+        )
+
+        _settingsVM = StateObject(wrappedValue:
+                                    dependencies.makeSettingsViewModel()
         )
     }
     
@@ -39,10 +44,8 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
                 
                 NavigationStack { BookmarksView(viewModel: bookmarksVM) }
                     .tabItem { Label("Bookmarks", systemImage: "bookmark") }
-                
-                NavigationStack {
-                    PlaceholderTabView(title: "Settings")
-                }
+
+                NavigationStack { SettingsView(viewModel: settingsVM) }
                 .tabItem { Label("Settings", systemImage: "gearshape") }
             }
             .environment(\.appDependencies, dependencies)
