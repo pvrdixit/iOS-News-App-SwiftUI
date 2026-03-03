@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B05A68342F2B515200D71EDF"
-               BuildableName = "NewsApp-SwiftUI-MVVM-Combine.app"
-               BlueprintName = "NewsApp-SwiftUI-MVVM-Combine"
-               ReferencedContainer = "container:NewsApp-SwiftUI-MVVM-Combine.xcodeproj">
+               BuildableName = "NewsApp-SwiftUI.app"
+               BlueprintName = "NewsApp-SwiftUI"
+               ReferencedContainer = "container:NewsApp-SwiftUI.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B05A68342F2B515200D71EDF"
-            BuildableName = "NewsApp-SwiftUI-MVVM-Combine.app"
-            BlueprintName = "NewsApp-SwiftUI-MVVM-Combine"
-            ReferencedContainer = "container:NewsApp-SwiftUI-MVVM-Combine.xcodeproj">
+            BuildableName = "NewsApp-SwiftUI.app"
+            BlueprintName = "NewsApp-SwiftUI"
+            ReferencedContainer = "container:NewsApp-SwiftUI.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B05A68342F2B515200D71EDF"
-            BuildableName = "NewsApp-SwiftUI-MVVM-Combine.app"
-            BlueprintName = "NewsApp-SwiftUI-MVVM-Combine"
-            ReferencedContainer = "container:NewsApp-SwiftUI-MVVM-Combine.xcodeproj">
+            BuildableName = "NewsApp-SwiftUI.app"
+            BlueprintName = "NewsApp-SwiftUI"
+            ReferencedContainer = "container:NewsApp-SwiftUI.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
