@@ -16,6 +16,8 @@ enum BookmarksViewSegment: String, CaseIterable, Identifiable {
 
 @MainActor
 final class BookmarksViewModel: ObservableObject {
+    let navigationTitle = "Bookmarks"
+
     @Published var selectedSegment: BookmarksViewSegment = .bookmarks
     @Published private(set) var displayedArticles: [Article] = []
     private let recentHistory: RecentHistoryStore
@@ -44,6 +46,10 @@ final class BookmarksViewModel: ObservableObject {
         case .recentHistory:
             return "Recently viewed articles will appear here."
         }
+    }
+
+    var shouldShowEmptyState: Bool {
+        displayedArticles.isEmpty
     }
 
     func loadSelectedSegment() {

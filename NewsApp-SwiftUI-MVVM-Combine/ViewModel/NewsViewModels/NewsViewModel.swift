@@ -16,6 +16,15 @@ enum LoadingState {
 
 @MainActor
 final class NewsViewModel: ObservableObject {
+    let navigationTitle = "News"
+    let retryButtonTitle = "Retry"
+    let cancelButtonTitle = "Cancel"
+    let emptyStateRetryButtonTitle = "Try again"
+    private let defaultErrorMessage = "Unable to fetch news, please try again"
+    private let defaultEmptyStateTitle = "No news available"
+    private let failedEmptyStateTitle = "Couldn't load news"
+    private let defaultEmptyStateMessage = "No articles are available right now. Please try again."
+
     @Published private(set) var articles: [Article] = []
     @Published private(set) var loadingState: LoadingState = .idle
     @Published var alertMessage: String? = nil
@@ -27,6 +36,34 @@ final class NewsViewModel: ObservableObject {
     private var paginationState = NewsPaginationState(pageSize: 5)
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
+
+    var shouldShowLoadingOverlay: Bool {
+        loadingState == .isLoading
+    }
+
+    var shouldShowEmptyState: Bool {
+        articles.isEmpty && loadingState == .idle
+    }
+
+    var emptyStateTitle: String {
+        alertMessage == nil ? defaultEmptyStateTitle : failedEmptyStateTitle
+    }
+
+    var emptyStateMessage: String {
+        alertMessage ?? defaultEmptyStateMessage
+    }
+
+    var errorMessageToDisplay: String {
+        alertMessage ?? defaultErrorMessage
+    }
+
+    var isErrorPresented: Bool {
+        alertMessage != nil && !shouldShowEmptyState
+    }
+
+    var shouldFetchOnAppear: Bool {
+        articles.isEmpty
+    }
 
     init(
         newsService: NewsService,
@@ -66,6 +103,12 @@ final class NewsViewModel: ObservableObject {
 
     func dismissError() {
         alertMessage = nil
+    }
+
+    func setErrorPresented(_ isPresented: Bool) {
+        if !isPresented {
+            dismissError()
+        }
     }
 }
 

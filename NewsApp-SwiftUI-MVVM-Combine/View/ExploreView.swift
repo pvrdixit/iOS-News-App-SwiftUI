@@ -33,50 +33,48 @@ struct ExploreView: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle("Explore")
+        .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $viewModel.search, prompt: "Search news")
+        .searchable(text: $viewModel.search, prompt: viewModel.searchPrompt)
         .overlay {
-            if viewModel.isLoading && viewModel.articles.isEmpty {
+            if viewModel.shouldShowLoadingOverlay {
                 ProgressView()
-            } else if showEmptyState {
+            } else if viewModel.shouldShowEmptyState {
                 EmptyStateView(
-                    title: emptyStateTitle,
-                    message: emptyStateMessage,
+                    title: viewModel.emptyStateTitle,
+                    message: viewModel.emptyStateMessage,
                     buttonTitle: nil,
                     action: nil
                 )
             }
         }
         .task {
-            if viewModel.articles.isEmpty {
+            if viewModel.shouldRefreshOnAppear {
                 await viewModel.refresh()
             }
         }
         .onSubmit(of: .search) {
-            Task { await viewModel.refresh() }
+            requestRefresh()
         }
         .onChange(of: viewModel.search) { oldValue, newValue in
-            let oldTrimmed = oldValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            let newTrimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !oldTrimmed.isEmpty && newTrimmed.isEmpty {
-                Task { await viewModel.refresh() }
+            if viewModel.shouldRefreshOnSearchChange(from: oldValue, to: newValue) {
+                requestRefresh()
             }
         }
         .onChange(of: viewModel.selectedCategory) { _, _ in
-            Task { await viewModel.refresh() }
+            requestRefresh()
         }
         .showAlert(
-            message: viewModel.alertMessage ?? "Unable to explore news, please try again",
+            message: viewModel.errorMessageToDisplay,
             isPresented: errorAlertBinding,
             primaryRightButton: (
-                title: "Retry",
+                title: viewModel.retryButtonTitle,
                 action: {
-                    Task { await viewModel.refresh() }
+                    requestRefresh()
                 }
             ),
             secondaryCancelButton: (
-                title: "Cancel",
+                title: viewModel.cancelButtonTitle,
                 action: {
                     viewModel.dismissError()
                 }
@@ -89,36 +87,15 @@ struct ExploreView: View {
 }
 
 private extension ExploreView {
-    var showEmptyState: Bool {
-        !viewModel.isLoading && viewModel.articles.isEmpty
-    }
-
-    var hasActiveFilters: Bool {
-        let q = viewModel.search.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !q.isEmpty || viewModel.selectedCategory != .all
-    }
-
-    var emptyStateTitle: String {
-        if !hasActiveFilters {
-            return "Search or pick a category"
-        }
-        return "No results"
-    }
-
-    var emptyStateMessage: String {
-        if !hasActiveFilters {
-            return "Use the search bar or choose a category to explore."
-        }
-        return "Try a different search or category."
+    func requestRefresh() {
+        Task { await viewModel.refresh() }
     }
 
     var errorAlertBinding: Binding<Bool> {
         Binding(
-            get: { viewModel.alertMessage != nil },
+            get: { viewModel.isErrorPresented },
             set: { isPresented in
-                if !isPresented {
-                    viewModel.dismissError()
-                }
+                viewModel.setErrorPresented(isPresented)
             }
         )
     }

@@ -25,7 +25,7 @@ struct BookmarksView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             
-            if viewModel.displayedArticles.isEmpty {
+            if viewModel.shouldShowEmptyState {
                 EmptyStateView(title: viewModel.emptyStateTitle, message: viewModel.emptyStateMessage, buttonTitle: nil, action: nil)
             } else {
                 List {
@@ -45,7 +45,7 @@ struct BookmarksView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle("Bookmarks")
+        .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .task(id: viewModel.selectedSegment) {
             viewModel.loadSelectedSegment()

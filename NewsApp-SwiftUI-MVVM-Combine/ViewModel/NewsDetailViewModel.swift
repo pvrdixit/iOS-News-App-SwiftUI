@@ -11,6 +11,14 @@ import WebKit
 
 @MainActor
 final class NewsDetailViewModel: ObservableObject {
+    let retryButtonTitle = "Try again"
+    let emptyStateTitle = "Unable to load the page"
+    let bookmarkIconName = "bookmark"
+    let bookmarkedIconName = "bookmark.fill"
+    let shareIconName = "square.and.arrow.up"
+    private let invalidArticleLinkMessage = "We couldn’t open this article. The link may be invalid or the article may no longer be available."
+    private let defaultErrorMessage = "Unable to load this article."
+
     @Published private(set) var isLoading: Bool = false
     @Published private(set) var isBookmarked: Bool = false
     @Published var alertMessage: String? = nil
@@ -42,10 +50,22 @@ final class NewsDetailViewModel: ObservableObject {
         alertMessage != nil && !isLoading
     }
 
+    var bookmarkIconNameToDisplay: String {
+        isBookmarked ? bookmarkedIconName : bookmarkIconName
+    }
+
+    var errorMessageToDisplay: String {
+        alertMessage ?? defaultErrorMessage
+    }
+
+    var isErrorPresented: Bool {
+        alertMessage != nil && !showEmptyState
+    }
+
     /// No-arg load used by the View: validates URL then loads or sets alert
     func load() async {
         guard let url else {
-            alertMessage = "We couldn’t open this article. The link may be invalid or the article may no longer be available."
+            alertMessage = invalidArticleLinkMessage
             return
         }
         await load(url)
@@ -88,6 +108,12 @@ final class NewsDetailViewModel: ObservableObject {
     
     func dismissError() {
         alertMessage = nil
+    }
+
+    func setErrorPresented(_ isPresented: Bool) {
+        if !isPresented {
+            dismissError()
+        }
     }
     
     private func processErrorForUI(from error: Error) -> String {

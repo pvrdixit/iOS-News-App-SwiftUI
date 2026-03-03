@@ -17,15 +17,15 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            Section("Region") {
+            Section(viewModel.regionSectionTitle) {
                 HStack {
-                    Label("Region", systemImage: "globe")
+                    Label(viewModel.regionLabelTitle, systemImage: viewModel.regionLabelSystemImage)
                     Spacer()
-                    Text("US").foregroundStyle(.secondary)
+                    Text(viewModel.regionCode).foregroundStyle(.secondary)
                 }
             }
             
-            Section("Storage") {
+            Section(viewModel.storageSectionTitle) {
                 ForEach(viewModel.actions) { action in
                     Button {
                         viewModel.prompt(action)
@@ -35,38 +35,39 @@ struct SettingsView: View {
                 }
             }
 
-            Section("About") {
-                Link(destination: URL(string: "https://github.com/pvrdixit")!) {
-                    Label("Open Source", systemImage: "link")
+            Section(viewModel.aboutSectionTitle) {
+                Link(destination: viewModel.openSourceURL) {
+                    Label(viewModel.openSourceTitle, systemImage: viewModel.openSourceSystemImage)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Vijay Raj Dixit")
+                    Text(viewModel.authorName)
                         .font(.headline)
 
-                    Text("iOS Freelance Developer • SwiftUI / UIKit")
+                    Text(viewModel.authorRole)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    Text("Production-grade News app showcasing MVVM, caching, pagination, and structured logging.")
+                    Text(viewModel.appDescription)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 4)
             }
 
-            Section("Privacy") {
-                Label("No Ads", systemImage: "checkmark.seal")
-                Label("No data collection", systemImage: "hand.raised")
+            Section(viewModel.privacySectionTitle) {
+                ForEach(viewModel.privacyItems) { item in
+                    Label(item.title, systemImage: item.systemImage)
+                }
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .showAlert(
             title: viewModel.confirmTitle,
             message: viewModel.confirmMessage,
             isPresented: $viewModel.showConfirmAlert,
-            secondaryCancelButton: ("Cancel", { viewModel.clearPendingAction() }),
+            secondaryCancelButton: (viewModel.confirmCancelButtonTitle, { viewModel.clearPendingAction() }),
             destructiveAction: {
                 viewModel.runPendingAction()
             }

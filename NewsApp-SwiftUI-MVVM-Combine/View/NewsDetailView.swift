@@ -22,12 +22,12 @@ struct NewsDetailView: View {
             Button {
                 viewModel.toggleBookmark()
             } label: {
-                Image(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark")
+                Image(systemName: viewModel.bookmarkIconNameToDisplay)
             }
 
             if let url = viewModel.url {
                 ShareLink(item: url) {
-                    Image(systemName: "square.and.arrow.up")
+                    Image(systemName: viewModel.shareIconName)
                 }
             }
         }
@@ -43,11 +43,11 @@ struct NewsDetailView: View {
                     ProgressView()
                 } else if viewModel.showEmptyState {
                     EmptyStateView(
-                        title: "Unable to load the page",
-                        message: errorAlertMessage,
-                        buttonTitle: "Try again",
+                        title: viewModel.emptyStateTitle,
+                        message: viewModel.errorMessageToDisplay,
+                        buttonTitle: viewModel.retryButtonTitle,
                         action: {
-                            Task { await viewModel.retry() }
+                            requestRetry()
                         }
                     )
                 }
@@ -56,12 +56,12 @@ struct NewsDetailView: View {
                 await viewModel.load()
             }
             .showAlert(
-                message: errorAlertMessage,
+                message: viewModel.errorMessageToDisplay,
                 isPresented: errorAlertBinding,
                 primaryRightButton: (
-                    title: "Retry",
+                    title: viewModel.retryButtonTitle,
                     action: {
-                        Task { await viewModel.retry() }
+                        requestRetry()
                     }
                 )
             )
@@ -70,15 +70,15 @@ struct NewsDetailView: View {
 
 /// Error Alerts
 private extension NewsDetailView {
-    var errorAlertMessage: String {
-        viewModel.alertMessage ?? "Unable to load this article."
+    func requestRetry() {
+        Task { await viewModel.retry() }
     }
 
     var errorAlertBinding: Binding<Bool> {
         Binding(
-            get: { viewModel.alertMessage != nil && !viewModel.showEmptyState },
+            get: { viewModel.isErrorPresented },
             set: { newValue in
-                if !newValue { viewModel.dismissError() }
+                viewModel.setErrorPresented(newValue)
             }
         )
     }

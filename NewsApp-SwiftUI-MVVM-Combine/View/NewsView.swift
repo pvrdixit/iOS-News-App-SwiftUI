@@ -33,33 +33,31 @@ struct NewsView: View {
             }
         }
         .listStyle(.plain)
-        .navigationTitle("News")
+        .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
-            if viewModel.loadingState == .isLoading {
+            if viewModel.shouldShowLoadingOverlay {
                 ProgressView()
-            } else if showEmptyState {
+            } else if viewModel.shouldShowEmptyState {
                 EmptyStateView(
-                    title: emptyStateTitle,
-                    message: emptyStateMessage,
-                    buttonTitle: "Try again",
+                    title: viewModel.emptyStateTitle,
+                    message: viewModel.emptyStateMessage,
+                    buttonTitle: viewModel.emptyStateRetryButtonTitle,
                     action: {
-                        Task {
-                            await viewModel.fetchNews(.isLoading)
-                        }
+                        requestLoadingRefresh()
                     }
                 )
             }
         }
         .task {
-            if viewModel.articles.isEmpty {
+            if viewModel.shouldFetchOnAppear {
                 await viewModel.fetchNews()
             }
         }
         .refreshable {
             await viewModel.fetchNews(.isRefreshing)
         }
-        .showAlert(message: errorAlertMessage,
+        .showAlert(message: viewModel.errorMessageToDisplay,
                    isPresented: errorAlertBinding,
                    primaryRightButton: primaryAlertAction,
                    secondaryCancelButton: secondaryAlertAction)
@@ -69,42 +67,37 @@ struct NewsView: View {
     }
 }
 
-/// Error Alerts
-extension NewsView {
-    private var errorAlertMessage: String { viewModel.alertMessage ?? "Unable to fetch news, please try again" }
-    private var emptyStateTitle: String {
-        viewModel.alertMessage == nil ? "No news available" : "Couldn't load news"
-    }
-    private var emptyStateMessage: String {
-        viewModel.alertMessage ?? "No articles are available right now. Please try again."
-    }
-    private var showEmptyState: Bool {
-        viewModel.articles.isEmpty &&
-        viewModel.loadingState == .idle
+private extension NewsView {
+    func requestRefresh() {
+        Task {
+            await viewModel.fetchNews()
+        }
     }
 
-    private var errorAlertBinding: Binding<Bool> {
+    func requestLoadingRefresh() {
+        Task {
+            await viewModel.fetchNews(.isLoading)
+        }
+    }
+
+    var errorAlertBinding: Binding<Bool> {
         Binding(
-            get: {
-                viewModel.alertMessage != nil && !showEmptyState
-            },
-            set: {
-                if !$0 { viewModel.dismissError() }
+            get: { viewModel.isErrorPresented },
+            set: { isPresented in
+                viewModel.setErrorPresented(isPresented)
             }
         )
     }
     
-    private var primaryAlertAction: (title: String, action: () -> Void) {(
-        title: "Retry",
+    var primaryAlertAction: (title: String, action: () -> Void) {(
+        title: viewModel.retryButtonTitle,
         action: {
-            Task {
-                await viewModel.fetchNews()
-            }
+            requestRefresh()
         })
     }
 
-    private var secondaryAlertAction: (title: String, action: () -> Void) {(
-        title: "Cancel",
+    var secondaryAlertAction: (title: String, action: () -> Void) {(
+        title: viewModel.cancelButtonTitle,
         action: {
             viewModel.dismissError()
         })

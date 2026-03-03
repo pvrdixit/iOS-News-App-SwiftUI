@@ -10,6 +10,16 @@ import Combine
 
 @MainActor
 final class ExploreViewModel: ObservableObject {
+    let navigationTitle = "Explore"
+    let searchPrompt = "Search news"
+    let retryButtonTitle = "Retry"
+    let cancelButtonTitle = "Cancel"
+    private let defaultErrorMessage = "Unable to explore news, please try again"
+    private let defaultEmptyStateTitle = "Search or pick a category"
+    private let defaultEmptyStateMessage = "Use the search bar or choose a category to explore."
+    private let filteredEmptyStateTitle = "No results"
+    private let filteredEmptyStateMessage = "Try a different search or category."
+
     @Published var search: String = ""
     @Published var selectedCategory: ExploreCategory = .all
     @Published private(set) var articles: [Article] = []
@@ -22,6 +32,39 @@ final class ExploreViewModel: ObservableObject {
     private var paginationState = NewsPaginationState(pageSize: 10)
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
+
+    var shouldShowLoadingOverlay: Bool {
+        isLoading && articles.isEmpty
+    }
+
+    var shouldShowEmptyState: Bool {
+        !isLoading && articles.isEmpty
+    }
+
+    var emptyStateTitle: String {
+        hasActiveFilters ? filteredEmptyStateTitle : defaultEmptyStateTitle
+    }
+
+    var emptyStateMessage: String {
+        hasActiveFilters ? filteredEmptyStateMessage : defaultEmptyStateMessage
+    }
+
+    var errorMessageToDisplay: String {
+        alertMessage ?? defaultErrorMessage
+    }
+
+    var isErrorPresented: Bool {
+        alertMessage != nil
+    }
+
+    var shouldRefreshOnAppear: Bool {
+        articles.isEmpty
+    }
+
+    private var hasActiveFilters: Bool {
+        let trimmedSearch = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedSearch.isEmpty || selectedCategory != .all
+    }
 
     init(
         newsService: NewsService,
@@ -48,6 +91,18 @@ final class ExploreViewModel: ObservableObject {
 
     func dismissError() {
         alertMessage = nil
+    }
+
+    func setErrorPresented(_ isPresented: Bool) {
+        if !isPresented {
+            dismissError()
+        }
+    }
+
+    func shouldRefreshOnSearchChange(from oldValue: String, to newValue: String) -> Bool {
+        let oldTrimmed = oldValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newTrimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !oldTrimmed.isEmpty && newTrimmed.isEmpty
     }
     
     /// Store recent history

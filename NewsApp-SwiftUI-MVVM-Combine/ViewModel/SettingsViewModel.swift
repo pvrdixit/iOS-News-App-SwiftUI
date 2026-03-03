@@ -18,12 +18,39 @@ struct ClearDataAction: Identifiable {
     let perform: () throws -> Void
 }
 
+struct SettingsLabelItem: Identifiable {
+    let id: String
+    let title: String
+    let systemImage: String
+}
+
 @MainActor
 final class SettingsViewModel: ObservableObject {
+    let navigationTitle = "Settings"
+    let regionSectionTitle = "Region"
+    let regionLabelTitle = "Region"
+    let regionLabelSystemImage = "globe"
+    let regionCode = "US"
+    let storageSectionTitle = "Storage"
+    let aboutSectionTitle = "About"
+    let openSourceTitle = "Open Source"
+    let openSourceSystemImage = "link"
+    let openSourceURL = URL(string: "https://github.com/pvrdixit")!
+    let authorName = "Vijay Raj Dixit"
+    let authorRole = "iOS Freelance Developer • SwiftUI / UIKit"
+    let appDescription = "Production-grade News app showcasing MVVM, caching, pagination, and structured logging."
+    let privacySectionTitle = "Privacy"
+    let confirmCancelButtonTitle = "Cancel"
+    private let defaultConfirmTitle = "Confirm"
+
     @Published var pendingAction: ClearDataAction?
     @Published var showConfirmAlert = false
 
     let actions: [ClearDataAction]
+    let privacyItems: [SettingsLabelItem] = [
+        SettingsLabelItem(id: "noAds", title: "No Ads", systemImage: "checkmark.seal"),
+        SettingsLabelItem(id: "noDataCollection", title: "No data collection", systemImage: "hand.raised")
+    ]
     private let logger: LoggerService
 
     init(
@@ -66,7 +93,7 @@ final class SettingsViewModel: ObservableObject {
     }
 
     var confirmTitle: String {
-        pendingAction?.title ?? "Confirm"
+        pendingAction?.title ?? defaultConfirmTitle
     }
 
     var confirmMessage: String {
