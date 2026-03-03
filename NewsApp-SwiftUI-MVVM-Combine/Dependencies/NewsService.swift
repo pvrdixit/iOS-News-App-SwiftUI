@@ -7,5 +7,5 @@
 
 
 protocol NewsService {
-    func fetchTopHeadlines(page: Int, pageSize: Int) async throws -> Headlines
+    func fetchTopHeadlines(search: String?, category: String?, page: Int, pageSize: Int) async throws -> Headlines
 }

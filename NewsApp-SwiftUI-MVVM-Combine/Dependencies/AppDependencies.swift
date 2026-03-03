@@ -44,7 +44,8 @@ final class AppDependencies {
     lazy var networkService: NetworkService = HTTPUtility(timeout: 8.0)
 
     /// Higher-level services (depend on other services)
-    lazy var newsService: NewsService = NewsResource(service: networkService)
+    lazy var newsResource: NewsResource = NewsResource(service: networkService)
+    lazy var newsService: NewsService = newsResource
 
     init(
         environment: AppRuntimeEnvironment = .current,
@@ -77,6 +78,15 @@ final class AppDependencies {
         SettingsViewModel(
             newsCache: newsCache,
             bookmarksStore: bookmarks,
+            recentHistory: recentHistory,
+            logger: logger
+        )
+    }
+
+    @MainActor
+    func makeExploreViewModel() -> ExploreViewModel {
+        ExploreViewModel(
+            newsService: newsService,
             recentHistory: recentHistory,
             logger: logger
         )

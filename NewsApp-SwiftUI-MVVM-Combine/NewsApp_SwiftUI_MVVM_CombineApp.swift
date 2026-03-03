@@ -11,6 +11,7 @@ import SwiftUI
 struct NewsApp_SwiftUI_MVVM_CombineApp: App {
     private let dependencies: AppDependencies
     @StateObject private var homeVM: NewsViewModel
+    @StateObject private var exploreVM: ExploreViewModel
     @StateObject private var bookmarksVM: BookmarksViewModel
     @StateObject private var settingsVM: SettingsViewModel
     
@@ -20,6 +21,10 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
         self.dependencies = dependencies
         _homeVM = StateObject(wrappedValue:
                                 dependencies.makeNewsViewModel()
+        )
+
+        _exploreVM = StateObject(wrappedValue:
+                                    dependencies.makeExploreViewModel()
         )
         
         _bookmarksVM = StateObject(wrappedValue:
@@ -37,9 +42,7 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
                 NavigationStack { NewsView(viewModel: homeVM) }
                     .tabItem { Label("Home", systemImage: "house") }
                 
-                NavigationStack {
-                    PlaceholderTabView(title: "Explore")
-                }
+                NavigationStack { ExploreView(viewModel: exploreVM) }
                 .tabItem { Label("Explore", systemImage: "safari") }
                 
                 NavigationStack { BookmarksView(viewModel: bookmarksVM) }
@@ -50,13 +53,5 @@ struct NewsApp_SwiftUI_MVVM_CombineApp: App {
             }
             .environment(\.appDependencies, dependencies)
         }
-    }
-}
-
-private struct PlaceholderTabView: View {
-    let title: String
-
-    var body: some View {
-        Text(title)
     }
 }

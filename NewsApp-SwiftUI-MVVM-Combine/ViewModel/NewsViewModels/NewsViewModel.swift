@@ -90,7 +90,7 @@ private extension NewsViewModel {
         }
 
         do {
-            let headlines = try await newsService.fetchTopHeadlines(page: page, pageSize: paginationState.pageSize)
+            let headlines = try await newsService.fetchTopHeadlines(search: nil, category: nil, page: page, pageSize: paginationState.pageSize)
             applyFetchedHeadlines(headlines, page: page, isFirstPage: isFirstPage)
         } catch {
             deferredAlertMessage = resolveFetchError(error, page: page, isFirstPage: isFirstPage)
