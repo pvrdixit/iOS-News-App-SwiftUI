@@ -104,24 +104,25 @@ This project is protocol-driven. Core domains expose **protocols** and concrete 
 ## Screenshots
 
 Check [Screenshots](Screenshots)
-- [01_launch_light.png](Screenshots/01_launch_light.png) — Launch (Light)
-- [02_news_list_light.png](Screenshots/02_news_list_light.png) — Headlines list (Light)
-- [03_news_detail_light.png](Screenshots/03_news_detail_light.png) — Article detail (Light)
-- [04_news_explore_sports_light.png](Screenshots/04_news_explore_sports_light.png) — Explore: category (Light)
-- [05_news_search_light.png](Screenshots/05_news_search_light.png) — Explore: search (Light)
-- [06_bookmarks_blank_light.png](Screenshots/06_bookmarks_blank_light.png) — Bookmarks empty (Light)
-- [07_bookmarks_saved_light.png](Screenshots/07_bookmarks_saved_light.png) — Bookmarks saved (Light)
-- [08_recent_history_light.png](Screenshots/08_recent_history_light.png) — Recent history (Light)
-- [09_settings_light.png](Screenshots/09_settings_light.png) — Settings (Light)
-- [10_settings_confirm_prompt_light.png](Screenshots/10_settings_confirm_prompt_light.png) — Settings confirmation prompt (Light)
-- [11_error_propagation_light.png](Screenshots/11_error_propagation_light.png) — Error state (Light)
-- [12_pull_to_refresh_loading_light.png](Screenshots/12_pull_to_refresh_loading_light.png) — Pull-to-refresh loading (Light)
-- [13_news_list_dark.png](Screenshots/13_news_list_dark.png) — Headlines list (Dark)
-- [14_news_detail_dark.png](Screenshots/14_news_detail_dark.png) — Article detail (Dark)
-- [15_news_explore_dark.png](Screenshots/15_news_explore_dark.png) — Explore (Dark)
-- [16_bookmarks_saved_dark.png](Screenshots/16_bookmarks_saved_dark.png) — Bookmarks saved (Dark)
-- [17_settings_dark.png](Screenshots/17_settings_dark.png) — Settings (Dark)
 
+* [01_news_landing_page_light.png](Screenshots/01_news_landing_page_light.png) — News landing page (Light)
+* [02_news_detailview_webpage_light_.png](Screenshots/02_news_detailview_webpage_light_.png) — Article detail (WebView) (Light)
+* [03_news_detailview_share_options_light.png](Screenshots/03_news_detailview_share_options_light.png) — Share options (Light)
+* [04_news_explore_sports_light.png](Screenshots/04_news_explore_sports_light.png) — Explore: Sports (Light)
+* [05_news_explore_sports_search_light.png](Screenshots/05_news_explore_sports_search_light.png) — Explore: Sports search (Light)
+* [06_bookmarks_light.png](Screenshots/06_bookmarks_light.png) — Bookmarks (Light)
+* [07_recent_history_light.png](Screenshots/07_recent_history_light.png) — Recent history (Light)
+* [08_settings_light.png](Screenshots/08_settings_light.png) — Settings (Light)
+* [9_news_landing_page_dark.png](Screenshots/9_news_landing_page_dark.png) — News landing page (Dark)
+* [10_news_explore_tech_dark.png](Screenshots/10_news_explore_tech_dark.png) — Explore: Tech (Dark)
+* [11_recent_history_dark.png](Screenshots/11_recent_history_dark.png) — Recent history (Dark)
+* [12_settings_dark.png](Screenshots/12_settings_dark.png) — Settings (Dark)
+
+---
+
+## Demo Video (Screen Recording)
+
+[Watch on YouTube](https://www.youtube.com/watch?v=Qhq0Y1JGW4M)
 ---
 
 ## Project Structure

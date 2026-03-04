@@ -19,6 +19,8 @@ struct NewsViewListItem: View {
                 Text(authorName)
                     .font(.system(size: 13))
                     .foregroundStyle(.primary.opacity(0.75))
+                    .lineLimit(2)
+                    .truncationMode(.tail)
                 
                 Spacer()
                 Text(date)
