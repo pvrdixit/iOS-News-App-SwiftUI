@@ -33,10 +33,6 @@ final class ExploreViewModel: ObservableObject {
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
 
-    var shouldShowLoadingOverlay: Bool {
-        isLoading && articles.isEmpty
-    }
-
     var shouldShowEmptyState: Bool {
         !isLoading && articles.isEmpty
     }

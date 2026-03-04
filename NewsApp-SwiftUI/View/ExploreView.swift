@@ -37,7 +37,7 @@ struct ExploreView: View {
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $viewModel.search, prompt: viewModel.searchPrompt)
         .overlay {
-            if viewModel.shouldShowLoadingOverlay {
+            if viewModel.isLoading {
                 ProgressView()
             } else if viewModel.shouldShowEmptyState {
                 EmptyStateView(

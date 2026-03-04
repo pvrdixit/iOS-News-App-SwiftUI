@@ -80,7 +80,7 @@ This project is protocol-driven. Core domains expose **protocols** and concrete 
 
 ## Tech Stack
 
-- Swift 5
+- Swift 6
 - SwiftUI
 - Combine (observable state)
 - Swift Concurrency (async/await)
@@ -201,8 +201,6 @@ NewsApp-SwiftUI-MVVM-Combine/
 ## Getting Started
 
 ### Prerequisites
-- Xcode 17+
-- iOS Simulator runtime that supports the deployment target
 - A NewsAPI key (newsapi.org)
 
 ### Setup

@@ -1,6 +1,6 @@
 //
-//  NewsApp_SwiftUI_MVVM.swift
-//  NewsApp-SwiftUI-MVVM-Combine
+//  NewsApp_SwiftUI.swift
+//  NewsApp-SwiftUI
 //
 //  Created by Vijay Raj Dixit on 29/01/26.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct NewsApp_SwiftUI_MVVM: App {
+struct NewsApp_SwiftUI: App {
     private let dependencies: AppDependencies
     @StateObject private var homeVM: NewsViewModel
     @StateObject private var exploreVM: ExploreViewModel
