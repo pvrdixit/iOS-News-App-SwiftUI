@@ -62,7 +62,6 @@ final class NewsDetailViewModel: ObservableObject {
         alertMessage != nil && !showEmptyState
     }
 
-    /// No-arg load used by the View: validates URL then loads or sets alert
     func load() async {
         guard let url else {
             alertMessage = invalidArticleLinkMessage
@@ -71,7 +70,6 @@ final class NewsDetailViewModel: ObservableObject {
         await load(url)
     }
 
-    /// No-arg retry used by the View
     func retry() async {
         await load()
     }

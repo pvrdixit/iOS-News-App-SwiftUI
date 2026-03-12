@@ -19,7 +19,7 @@ struct ExploreView: View {
             ForEach(viewModel.articles) { article in
                 NewsViewListItem(
                     authorName: article.author ?? "",
-                    date: article.publishedDateToDisplay,
+                    date: ArticleDisplayFormatter.publishedDate(from: article.publishedAt),
                     headline: article.title,
                     imageURL: article.urlToImage
                 )

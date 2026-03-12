@@ -7,15 +7,15 @@
 
 import Foundation
 
-final class NewsResource: NewsService {
-    private let service: NetworkService
+final class NewsResource {
+    private let networkService: NetworkService
 
     init(service: NetworkService) {
-        self.service = service
+        self.networkService = service
     }
 
     /// Fetch paginated top headlines using async/await.
-    func fetchTopHeadlines(search: String?, category: String?, page: Int = 1, pageSize: Int = 20) async throws -> Headlines {
+    func fetchTopHeadlines(search: String?, category: String?, page: Int = 1, pageSize: Int = 20) async throws -> ArticlePage {
         let safePage = max(1, page)
         let safePageSize = min(max(1, pageSize), 100)
         guard let url = makeTopHeadlinesURL(search: search, category: category, page: safePage, pageSize: safePageSize) else {
@@ -23,7 +23,7 @@ final class NewsResource: NewsService {
         }
 
         let apiRequest = APIRequest(url: url, method: .get)
-        return try await service.requestAsync(apiRequest.urlRequest())
+        return try await networkService.requestAsync(apiRequest.urlRequest())
     }
     
     /// Construct topheadlines API endpoint
@@ -50,7 +50,7 @@ final class NewsResource: NewsService {
         components.queryItems?.append(URLQueryItem(name: APIConstants.Query.page, value: "\(safePage)"))
         components.queryItems?.append(URLQueryItem(name: APIConstants.Query.pageSize, value: "\(safePageSize)"))
         
-        print("NewsResource endpoint: \(components.url?.absoluteString ?? "")")
+        // print("NewsResource endpoint: \(components.url?.absoluteString ?? "")")
         return components.url
     }
 }

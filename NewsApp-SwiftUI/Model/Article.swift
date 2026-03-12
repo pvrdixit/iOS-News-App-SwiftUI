@@ -17,17 +17,6 @@ struct Article: Codable, Identifiable {
     let urlToImage: String?
     let publishedAt: String
     let content: String?
-    var publishedDateToDisplay: String {
-        let iso = ISO8601DateFormatter()
-        guard let date = iso.date(from: publishedAt) else { return "" }
-
-        let formatter = DateFormatter()
-        formatter.locale = Locale.current
-        formatter.timeZone = TimeZone.current
-        formatter.dateFormat = "d MMM yyyy, h:mm a"
-
-        return formatter.string(from: date)
-    }
 }
 
 /// For passing it as navigation item, custom Hasher reduces load

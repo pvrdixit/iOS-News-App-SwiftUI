@@ -32,7 +32,7 @@ struct BookmarksView: View {
                     ForEach(viewModel.displayedArticles) { article in
                         NewsViewListItem(
                             authorName: article.author ?? "",
-                            date: article.publishedDateToDisplay,
+                            date: ArticleDisplayFormatter.publishedDate(from: article.publishedAt),
                             headline: article.title,
                             imageURL: article.urlToImage
                         )

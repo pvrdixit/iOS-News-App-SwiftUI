@@ -30,6 +30,19 @@ struct NewsPaginationState {
         return firstPage
     }
 
+    mutating func refreshFirstPagePreservingLoaded(existing: [Article], incoming: [Article], totalResults: Int) -> [Article] {
+        let refreshedFirstPage = deduped(existing: [], incoming: incoming)
+        let merged = deduped(existing: refreshedFirstPage, incoming: existing)
+
+        self.totalResults = max(totalResults, merged.count)
+        if merged.count <= pageSize {
+            currentPage = 1
+        }
+        canLoadMore = merged.count < self.totalResults
+
+        return merged
+    }
+
     mutating func applyNextPage(existing: [Article], incoming: [Article], totalResults: Int, nextPage: Int) -> [Article] {
         let merged = deduped(existing: existing, incoming: incoming)
         self.totalResults = max(self.totalResults, totalResults)

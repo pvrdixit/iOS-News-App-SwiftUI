@@ -43,9 +43,8 @@ final class AppDependencies {
     /// Shared infrastructure
     lazy var networkService: NetworkService = HTTPUtility(timeout: 8.0)
 
-    /// Higher-level services (depend on other services)
-    lazy var newsResource: NewsResource = NewsResource(service: networkService)
-    lazy var newsService: NewsService = newsResource
+    /// Concrete news data source used by feed view models.
+    lazy var newsResource = NewsResource(service: networkService)
 
     init(
         environment: AppRuntimeEnvironment = .current,
@@ -57,7 +56,7 @@ final class AppDependencies {
     @MainActor
     func makeNewsViewModel() -> NewsViewModel {
         NewsViewModel(
-            newsService: newsService,
+            newsResource: newsResource,
             recentHistory: recentHistory,
             newsCache: newsCache,
             logger: logger
@@ -86,7 +85,7 @@ final class AppDependencies {
     @MainActor
     func makeExploreViewModel() -> ExploreViewModel {
         ExploreViewModel(
-            newsService: newsService,
+            newsResource: newsResource,
             recentHistory: recentHistory,
             logger: logger
         )

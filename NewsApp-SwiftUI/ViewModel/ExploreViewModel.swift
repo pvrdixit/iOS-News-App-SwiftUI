@@ -26,7 +26,7 @@ final class ExploreViewModel: ObservableObject {
     @Published private(set) var isLoading: Bool = false
     @Published var alertMessage: String? = nil
 
-    private let newsService: NewsService
+    private let newsResource: NewsResource
     private let recentHistory: RecentHistoryStore
     private let logger: LoggerService
     private var paginationState = NewsPaginationState(pageSize: 10)
@@ -63,11 +63,11 @@ final class ExploreViewModel: ObservableObject {
     }
 
     init(
-        newsService: NewsService,
+        newsResource: NewsResource,
         recentHistory: RecentHistoryStore,
         logger: LoggerService
     ) {
-        self.newsService = newsService
+        self.newsResource = newsResource
         self.recentHistory = recentHistory
         self.logger = logger
     }
@@ -134,7 +134,7 @@ private extension ExploreViewModel {
         defer { isLoading = false }
 
         do {
-            let headlines = try await newsService.fetchTopHeadlines(
+            let articlePage = try await newsResource.fetchTopHeadlines(
                 search: normalizedSearch,
                 category: selectedCategory.apiValue,
                 page: page,
@@ -142,15 +142,15 @@ private extension ExploreViewModel {
             )
             if isFirstPage {
                 articles = paginationState.applyFirstPage(
-                    articles: headlines.articles,
-                    totalResults: headlines.totalResults
+                    articles: articlePage.articles,
+                    totalResults: articlePage.totalResults
                 )
                 hasLoadedFirstPageFromNetwork = true
             } else {
                 articles = paginationState.applyNextPage(
                     existing: articles,
-                    incoming: headlines.articles,
-                    totalResults: headlines.totalResults,
+                    incoming: articlePage.articles,
+                    totalResults: articlePage.totalResults,
                     nextPage: page
                 )
             }

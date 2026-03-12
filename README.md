@@ -11,7 +11,7 @@ Built as a portfolio project to demonstrate scalable architecture, resilient dat
 
 This project demonstrates:
 
-- Protocol-based **dependency injection** and service abstraction
+- Protocol-based **dependency injection** for infrastructure concerns
 - **Offline-first fallback** (restore cached content when first-page fetch fails)
 - Reusable **JSON disk storage** for cache, bookmarks, and recent history
 - Structured logging and **error mapping** for user-friendly messaging
@@ -34,7 +34,7 @@ This project demonstrates:
 
 - SwiftUI composition with **tab-based navigation**
 - MVVM with clear **View / ViewModel** responsibility boundaries
-- Protocol-oriented **dependency injection**
+- Pragmatic **dependency injection** with concrete feature resources
 - async/await networking with **pagination state management**
 - Disk persistence (JSON) for cache, bookmarks, and recent history
 - Error mapping from low-level failures → **UI-safe messages**
@@ -43,21 +43,20 @@ This project demonstrates:
 
 ---
 
-## Architecture Overview (Protocols + Implementations)
+## Architecture Overview
 
-This project is protocol-driven. Core domains expose **protocols** and concrete implementations live in their feature folders.
+This project keeps **protocols for shared infrastructure** and uses **concrete feature resources** where extra abstraction does not add value.
 
 ### Protocols (in `Dependencies/`)
 - `NetworkService` (protocol)
 - `LoggerService` (protocol)
-- `NewsService` (protocol)
 - Storage protocols:
   - `StorageService` (protocol entry point)
   - plus **separate protocols per store** (NewsCache / Bookmarks / RecentHistory)
 
 ### Implementations (by folder)
 - `NetworkService/HTTPUtility` → `NetworkService` implementation
-- `NewsService/NewsResource` → `NewsService` implementation (uses `NetworkService`)
+- `NewsService/NewsResource` → concrete news data source (uses `NetworkService`)
 - `LoggerService/OSLoggerService`, `LoggerService/RemoteLoggerService` → `LoggerService` implementations
 - `StorageService/JSONNewsCacheStore`, `JSONBookmarksStore`, `JSONRecentHistoryStore` → store implementations
 
@@ -68,7 +67,7 @@ This project is protocol-driven. Core domains expose **protocols** and concrete 
 ## Flows
 
 ### Data flow (News)
-`View <--> ViewModel <-> NewsResource (NewsService impl) <-> NetworkService (protocol) -> HTTPUtility`
+`View <--> ViewModel <-> NewsResource -> NetworkService (protocol) -> HTTPUtility`
 
 ### Logging flow
 `View <--> ViewModel <-> LoggerService (protocol) -> OSLoggerService / RemoteLoggerService`
@@ -134,7 +133,6 @@ NewsApp-SwiftUI-MVVM-Combine/
 │   ├── AppDependencies+Environment.swift
 │   ├── LoggerService.swift          # protocol
 │   ├── NetworkService.swift         # protocol
-│   ├── NewsService.swift            # protocol
 │   └── StorageService.swift         # protocol(s) / store protocols entry point
 │
 ├── ErrorMappers/
@@ -150,8 +148,9 @@ NewsApp-SwiftUI-MVVM-Combine/
 │
 ├── Model/
 │   ├── Article.swift
+│   ├── ArticleDisplayFormatter.swift
+│   ├── ArticlePage.swift
 │   ├── ExploreCategory.swift
-│   ├── Headlines.swift
 │   └── Source.swift
 │
 ├── NetworkService/
@@ -163,7 +162,7 @@ NewsApp-SwiftUI-MVVM-Combine/
 │   └── (other networking helpers)
 │
 ├── NewsService/
-│   └── NewsResource.swift           # NewsService implementation
+│   └── NewsResource.swift           # concrete news data source
 │
 ├── StorageService/
 │   ├── JSONDiskStore.swift

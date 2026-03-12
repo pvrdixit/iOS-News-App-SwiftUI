@@ -29,7 +29,7 @@ final class NewsViewModel: ObservableObject {
     @Published private(set) var loadingState: LoadingState = .idle
     @Published var alertMessage: String? = nil
 
-    private let newsService: NewsService
+    private let newsResource: NewsResource
     private let recentHistory: RecentHistoryStore
     private let newsCache: NewsCacheStore
     private let logger: LoggerService
@@ -66,12 +66,12 @@ final class NewsViewModel: ObservableObject {
     }
 
     init(
-        newsService: NewsService,
+        newsResource: NewsResource,
         recentHistory: RecentHistoryStore,
         newsCache: NewsCacheStore,
         logger: LoggerService
     ) {
-        self.newsService = newsService
+        self.newsResource = newsResource
         self.recentHistory = recentHistory
         self.newsCache = newsCache
         self.logger = logger
@@ -133,27 +133,38 @@ private extension NewsViewModel {
         }
 
         do {
-            let headlines = try await newsService.fetchTopHeadlines(search: nil, category: nil, page: page, pageSize: paginationState.pageSize)
-            applyFetchedHeadlines(headlines, page: page, isFirstPage: isFirstPage)
+            let articlePage = try await newsResource.fetchTopHeadlines(
+                search: nil,
+                category: nil,
+                page: page,
+                pageSize: paginationState.pageSize
+            )
+            applyFetchedPage(articlePage, page: page, isFirstPage: isFirstPage)
         } catch {
             deferredAlertMessage = resolveFetchError(error, page: page, isFirstPage: isFirstPage)
         }
     }
 
-    func applyFetchedHeadlines(_ headlines: Headlines, page: Int, isFirstPage: Bool) {
+    func applyFetchedPage(_ articlePage: ArticlePage, page: Int, isFirstPage: Bool) {
         if isFirstPage {
-            if !shouldKeepExistingArticles(onFirstPageResponse: headlines.articles) {
+            if shouldPreserveLoadedArticles(afterRefreshingWith: articlePage.articles) {
+                articles = paginationState.refreshFirstPagePreservingLoaded(
+                    existing: articles,
+                    incoming: articlePage.articles,
+                    totalResults: articlePage.totalResults
+                )
+            } else {
                 articles = paginationState.applyFirstPage(
-                    articles: headlines.articles,
-                    totalResults: headlines.totalResults
+                    articles: articlePage.articles,
+                    totalResults: articlePage.totalResults
                 )
             }
             hasLoadedFirstPageFromNetwork = true
         } else {
             articles = paginationState.applyNextPage(
                 existing: articles,
-                incoming: headlines.articles,
-                totalResults: headlines.totalResults,
+                incoming: articlePage.articles,
+                totalResults: articlePage.totalResults,
                 nextPage: page
             )
         }
@@ -172,20 +183,18 @@ private extension NewsViewModel {
         return index >= triggerIndex
     }
 
-    func shouldKeepExistingArticles(onFirstPageResponse incoming: [Article]) -> Bool {
+    func shouldPreserveLoadedArticles(afterRefreshingWith incoming: [Article]) -> Bool {
         guard !articles.isEmpty, !incoming.isEmpty else { return false }
 
         if articles.first?.id == incoming.first?.id {
             return true
         }
 
-        let existingTopFive = Array(articles.prefix(5)).map(\.id)
-        let incomingTopFive = Array(incoming.prefix(5)).map(\.id)
-        guard existingTopFive.count == 5, incomingTopFive.count == 5 else {
-            return false
-        }
+        let comparisonCount = paginationState.pageSize
+        let existingFirstPage = Array(articles.prefix(comparisonCount)).map(\.id)
+        let incomingFirstPage = Array(incoming.prefix(comparisonCount)).map(\.id)
 
-        return existingTopFive == incomingTopFive
+        return existingFirstPage == incomingFirstPage
     }
 }
 

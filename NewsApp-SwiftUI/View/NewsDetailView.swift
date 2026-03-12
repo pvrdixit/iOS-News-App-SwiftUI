@@ -37,6 +37,7 @@ struct NewsDetailView: View {
     var body: some View {
         WebView(viewModel.page)
             .ignoresSafeArea()
+            .toolbar(.hidden, for: .tabBar)
             .toolbar { toolBarSetup }
             .overlay {
                 if viewModel.isLoading {

@@ -25,11 +25,7 @@ struct CategoryChips: View {
                             .padding(.vertical, 8)
                             .background(
                                 Capsule()
-                                    .fill(category == selected ? Color(
-                                        red: 65.0 / 255.0,
-                                        green: 145.0 / 255.0,
-                                        blue: 185.0 / 255.0
-                                    ) : Color.secondary.opacity(0.1))
+                                    .fill(category == selected ? Color.accent  : Color.secondary.opacity(0.1))
                             )
                     }
                     .buttonStyle(.plain)
