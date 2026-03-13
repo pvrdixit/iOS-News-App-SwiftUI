@@ -1,9 +1,12 @@
-# iOS News App (SwiftUI + MVVM)
+# iOS News App (SwiftUI + MVVM + Clean Architecture)
 
-A production-style iOS News app built with **SwiftUI** and **MVVM**, featuring **async/await networking**, **REST API integration**, **pagination**, **disk-backed caching**, and clean **state management**.  
-Built as a portfolio project to demonstrate scalable architecture, resilient data handling, and polished SwiftUI UX patterns.
+A production-style iOS News app built with **SwiftUI**, **MVVM**, and a lightweight **Clean Architecture** split, featuring **multiple remote news providers**, **async/await networking**, **provider-agnostic pagination**, **disk-backed caching**, and clean **UI state management**.
 
-**Data source credit:** https://newsapi.org/
+Built as a portfolio project to demonstrate scalable architecture, resilient data handling, and a setup where **new providers can be added or removed without rewriting the presentation layer**.
+
+**Data source credit:**
+- [NewsAPI.org](https://newsapi.org/)
+- [NewsData.io](https://newsdata.io/)
 
 ---
 
@@ -11,11 +14,14 @@ Built as a portfolio project to demonstrate scalable architecture, resilient dat
 
 This project demonstrates:
 
-- Protocol-based **dependency injection** for infrastructure concerns
-- **Offline-first fallback** (restore cached content when first-page fetch fails)
+- **MVVM + Clean Architecture** with a clear split between `App`, `Presentation`, `Domain`, `Data`, and `Core`
+- A **multi-source news architecture** where one provider is selected at app composition time
+- A provider adapter pattern that makes it easy to **add or remove a source**
+- **Provider-agnostic domain contracts** (`HeadlinesQuery`, `HeadlinesPage`, `HeadlinesRepository`)
+- **Offline-first fallback** for headlines (cached first page shown when initial fetch fails)
 - Reusable **JSON disk storage** for cache, bookmarks, and recent history
-- Structured logging and **error mapping** for user-friendly messaging
-- Clear View ↔ ViewModel boundaries with testable components
+- Domain-level **error mapping** so infrastructure failures do not leak directly into the UI
+- Lightweight dependency injection with **`AppDI`**, **`AppRouter`**, and **provider factories**
 
 ---
 
@@ -26,54 +32,206 @@ This project demonstrates:
 - **Article detail** in a WebKit-powered view
 - **Bookmarks** with persistent storage
 - **Recently viewed (MRU)** history with max-item trimming
+- **Cached headlines fallback** when first-page fetch fails
 - **Settings** actions to clear cache, bookmarks, and history
+- **Switchable provider architecture** supporting:
+  - `NewsAPI`
+  - `NewsData`
 
 ---
 
 ## Skills Demonstrated
 
-- SwiftUI composition with **tab-based navigation**
-- MVVM with clear **View / ViewModel** responsibility boundaries
-- Pragmatic **dependency injection** with concrete feature resources
-- async/await networking with **pagination state management**
+- SwiftUI composition with a clean **tab-based app shell**
+- MVVM with thin Views and **screen-focused ViewModels**
+- Lightweight Clean Architecture with **Domain contracts** and **Data implementations**
+- **Dependency composition** through `AppDI` instead of view-level wiring
+- async/await networking with **normalized pagination**
+- Multiple provider integrations hidden behind a **single app-facing repository**
 - Disk persistence (JSON) for cache, bookmarks, and recent history
-- Error mapping from low-level failures → **UI-safe messages**
-- Structured logging with environment-based provider selection
-- Reusable UI components and consistent **empty/loading/error** states
+- Error mapping from low-level failures -> **domain errors** -> **UI-safe messages**
+- Structured logging with environment-based logger selection
+- Reusable UI components and consistent **empty / loading / error** states
 
 ---
 
 ## Architecture Overview
 
-This project keeps **protocols for shared infrastructure** and uses **concrete feature resources** where extra abstraction does not add value.
+This project uses a **lightweight** interpretation of Clean Architecture:
 
-### Protocols (in `Dependencies/`)
-- `NetworkService` (protocol)
-- `LoggerService` (protocol)
-- Storage protocols:
-  - `StorageService` (protocol entry point)
-  - plus **separate protocols per store** (NewsCache / Bookmarks / RecentHistory)
+- protocols are used where they protect a boundary or make composition easier
+- concrete types are used where more abstraction would only add noise
 
-### Implementations (by folder)
-- `NetworkService/HTTPUtility` → `NetworkService` implementation
-- `NewsService/NewsResource` → concrete news data source (uses `NetworkService`)
-- `LoggerService/OSLoggerService`, `LoggerService/RemoteLoggerService` → `LoggerService` implementations
-- `StorageService/JSONNewsCacheStore`, `JSONBookmarksStore`, `JSONRecentHistoryStore` → store implementations
+### Layer Responsibilities
 
-`AppDependencies` wires everything and injects ViewModels.
+#### App
+
+Responsible for:
+
+- app bootstrap
+- dependency composition
+- root navigation
+- provider selection
+- runtime configuration
+
+Key files:
+
+- `App/NewsApp_SwiftUI.swift`
+- `App/AppRouter.swift`
+- `App/AppDI.swift`
+- `App/AppConfiguration.swift`
+- `App/HeadlinesDataSourceFactory.swift`
+- `App/NewsProviderID.swift`
+- `App/ExploreCategoriesProvider.swift`
+
+#### Presentation
+
+Responsible for:
+
+- SwiftUI rendering
+- screen state
+- user interaction handling
+- view-specific formatting and UI helpers
+
+Key folders:
+
+- `Presentation/Home/`
+- `Presentation/Explore/`
+- `Presentation/Bookmarks/`
+- `Presentation/Settings/`
+- `Presentation/NewsDetail/`
+- `Presentation/Shared/`
+
+#### Domain
+
+Responsible for:
+
+- app-facing entities
+- repository contracts
+- use cases
+- provider-agnostic query / response models
+- domain-level errors
+
+Key folders:
+
+- `Domain/Entities/`
+- `Domain/Repositories/`
+- `Domain/UseCases/`
+- `Domain/Errors/`
+
+#### Data
+
+Responsible for:
+
+- repository implementations
+- provider DTO decoding
+- provider adapters
+- mapping DTOs into domain entities
+- local persistence
+- infrastructure -> domain error translation
+
+Key folders:
+
+- `Data/DTOs/`
+- `Data/Remote/`
+- `Data/Mappers/`
+- `Data/Repositories/`
+- `Data/Local/`
+
+#### Core
+
+Responsible for:
+
+- shared networking primitives
+- logging services
+- MRU utility
+- common extensions
+
+Key folders:
+
+- `Core/Network/`
+- `Core/Utils/`
+- `Core/Extensions/`
 
 ---
 
 ## Flows
 
-### Data flow (News)
-`View <--> ViewModel <-> NewsResource -> NetworkService (protocol) -> HTTPUtility`
+### Remote Headlines Flow
 
-### Logging flow
-`View <--> ViewModel <-> LoggerService (protocol) -> OSLoggerService / RemoteLoggerService`
+```text
+View
+  <--> ViewModel
+  <--> FetchTopHeadlinesUseCase
+  <--> HeadlinesRepository (protocol)
+  <--> HeadlinesRepositoryImpl
+  <--> RemoteHeadlinesDataSource
+  <--> NetworkService
+  <--> HTTPUtility
+```
 
-### Cache / Storage flow
-`View <--> ViewModel <-> (NewsCacheStore / BookmarksStore / RecentHistoryStore protocols) -> JSON*Store -> JSONDiskStore`
+### Provider Selection Flow
+
+```text
+AppDI
+  -> selected NewsProviderID
+  -> HeadlinesDataSourceFactory
+  -> NewsAPIHeadlinesDataSource / NewsDataHeadlinesDataSource
+  -> HeadlinesRepositoryImpl
+```
+
+### Local Storage Flow
+
+```text
+View
+  <--> ViewModel
+  <--> BookmarkRepository / RecentHistoryRepository / NewsCacheRepository
+  <--> JSON*Store
+  <--> JSONDiskStore
+```
+
+---
+
+## Multi-Source Provider Architecture
+
+This is the main architectural upgrade from the older version of the project.
+
+The app no longer lets the UI layer know about:
+
+- provider base URLs
+- provider DTOs
+- provider-specific pagination styles
+- provider-specific query formats
+
+Instead:
+
+- `RemoteHeadlinesDataSource` defines the provider adapter contract
+- `NewsAPIHeadlinesDataSource` handles NewsAPI requests and page-number pagination
+- `NewsDataHeadlinesDataSource` handles NewsData requests and token-based pagination
+- `HeadlinesRepositoryImpl` normalizes the selected provider into one domain contract
+- `HeadlinesQuery` and `HeadlinesPage` are the only models the Presentation layer cares about
+
+That means the UI always works with:
+
+```swift
+FetchTopHeadlinesUseCase.execute(_ query: HeadlinesQuery)
+```
+
+and never has to care which API produced the headlines.
+
+### Why this makes provider swapping easy
+
+To add a new provider, the architecture already gives you a predictable path:
+
+1. Add provider DTOs in `Data/DTOs/`
+2. Add provider-to-domain mappers in `Data/Mappers/`
+3. Add a new `RemoteHeadlinesDataSource` implementation in `Data/Remote/`
+4. Add the provider case in `App/NewsProviderID.swift`
+5. Wire it in `App/HeadlinesDataSourceFactory.swift`
+
+The rest of the app can stay unchanged.
+
+That also means removing a provider is a localized change rather than a rewrite across screens.
 
 ---
 
@@ -81,119 +239,100 @@ This project keeps **protocols for shared infrastructure** and uses **concrete f
 
 - Swift 6
 - SwiftUI
-- Combine (observable state)
-- Swift Concurrency (async/await)
+- Combine (observable presentation state)
+- Swift Concurrency (`async/await`)
 - WebKit (article detail)
-- Kingfisher `8.6.2` (remote image loading/caching)
-- `os.Logger` (structured local logging)
+- Kingfisher `8.6.2` (remote image loading / caching)
+- `os.Logger` style structured logging
 
 ---
 
 ## Key Behaviors Implemented
 
-- Pagination with deduplication and load-more thresholds
-- Cache save on successful fetch + cache fallback on first-page fetch failure
+- Pagination with incoming-page deduplication
+- Provider-specific pagination normalized behind one repository contract
+- Cache save on successful fetch + cache fallback on failed first-page fetch
 - MRU recent-history behavior with max-item trimming
 - Bookmark toggle with persistent storage
 - Search + category filtering in Explore
-- Unified empty/loading/error UX states with retry pathways
+- Provider-specific category availability resolved outside the UI layer
+- Infrastructure errors translated into domain `AppError` values before reaching Presentation
 
----
-
-## Screenshots
-
-Check [Screenshots](Screenshots)
-
-* [01_news_landing_page_light.png](Screenshots/01_news_landing_page_light.png) — News landing page (Light)
-* [02_news_detailview_webpage_light_.png](Screenshots/02_news_detailview_webpage_light_.png) — Article detail (WebView) (Light)
-* [03_news_detailview_share_options_light.png](Screenshots/03_news_detailview_share_options_light.png) — Share options (Light)
-* [04_news_explore_sports_light.png](Screenshots/04_news_explore_sports_light.png) — Explore: Sports (Light)
-* [05_news_explore_sports_search_light.png](Screenshots/05_news_explore_sports_search_light.png) — Explore: Sports search (Light)
-* [06_bookmarks_light.png](Screenshots/06_bookmarks_light.png) — Bookmarks (Light)
-* [07_recent_history_light.png](Screenshots/07_recent_history_light.png) — Recent history (Light)
-* [08_settings_light.png](Screenshots/08_settings_light.png) — Settings (Light)
-* [9_news_landing_page_dark.png](Screenshots/9_news_landing_page_dark.png) — News landing page (Dark)
-* [10_news_explore_tech_dark.png](Screenshots/10_news_explore_tech_dark.png) — Explore: Tech (Dark)
-* [11_recent_history_dark.png](Screenshots/11_recent_history_dark.png) — Recent history (Dark)
-* [12_settings_dark.png](Screenshots/12_settings_dark.png) — Settings (Dark)
-
----
-
-## Demo Video (Screen Recording)
-
-[Watch on YouTube](https://www.youtube.com/watch?v=Qhq0Y1JGW4M)
 ---
 
 ## Project Structure
 
 ```text
-NewsApp-SwiftUI-MVVM-Combine/
-├── Dependencies/
-│   ├── AppDependencies.swift
-│   ├── AppDependencies+Environment.swift
-│   ├── LoggerService.swift          # protocol
-│   ├── NetworkService.swift         # protocol
-│   └── StorageService.swift         # protocol(s) / store protocols entry point
+NewsApp-SwiftUI/
+├── App/
+│   ├── AppConfiguration.swift
+│   ├── AppDI.swift
+│   ├── AppRouter.swift
+│   ├── ExploreCategoriesProvider.swift
+│   ├── HeadlinesDataSourceFactory.swift
+│   ├── NewsApp_SwiftUI.swift
+│   └── NewsProviderID.swift
 │
-├── ErrorMappers/
-│   ├── NavigationErrorMapper.swift
-│   └── NetworkErrorMapper.swift
+├── Core/
+│   ├── Extensions/
+│   │   └── Alert+Extension.swift
+│   ├── Network/
+│   │   ├── APIRequest.swift
+│   │   ├── HTTPUtility.swift
+│   │   └── NetworkService.swift
+│   └── Utils/
+│       ├── LoggerService.swift
+│       ├── MRUList.swift
+│       ├── OSLoggerService.swift
+│       └── RemoteLoggerService.swift
 │
-├── Extensions/
-│   └── Alert+Extension.swift
+├── Data/
+│   ├── DTOs/
+│   │   ├── NewsAPITopHeadlinesDTO.swift
+│   │   └── NewsDataLatestDTO.swift
+│   ├── Local/
+│   │   ├── JSONBookmarksStore.swift
+│   │   ├── JSONDiskStore.swift
+│   │   ├── JSONNewsCacheStore.swift
+│   │   ├── JSONRecentHistoryStore.swift
+│   ├── Mappers/
+│   │   ├── InfrastructureErrorMapper.swift
+│   │   ├── NewsAPIArticleMapper.swift
+│   │   └── NewsDataArticleMapper.swift
+│   ├── Remote/
+│   │   ├── NewsAPIHeadlinesDataSource.swift
+│   │   ├── NewsDataHeadlinesDataSource.swift
+│   │   └── RemoteHeadlinesDataSource.swift
+│   └── Repositories/
+│       ├── HeadlinesRepositoryImpl.swift
+│       └── (remote repository implementations)
 │
-├── LoggerService/
-│   ├── OSLoggerService.swift        # LoggerService implementation
-│   └── RemoteLoggerService.swift    # placeholder implementation
+├── Domain/
+│   ├── Entities/
+│   │   └── Article.swift
+│   ├── Errors/
+│   │   └── AppError.swift
+│   ├── Repositories/
+│   │   ├── HeadlinesRepository.swift
+│   │   └── StorageRepositories.swift
+│   └── UseCases/
+│       └── HeadlinesUseCases.swift
 │
-├── Model/
-│   ├── Article.swift
-│   ├── ArticleDisplayFormatter.swift
-│   ├── ArticlePage.swift
-│   ├── ExploreCategory.swift
-│   └── Source.swift
+├── Presentation/
+│   ├── Bookmarks/
+│   ├── Explore/
+│   ├── Home/
+│   ├── NewsDetail/
+│   ├── Settings/
+│   └── Shared/
 │
-├── NetworkService/
-│   ├── APIConstants.swift
-│   ├── APIRequest.swift
-│   ├── HTTPUtility.swift            # NetworkService implementation
-│   ├── NetworkLogger.swift
-│   ├── NewsAPIKey.swift
-│   └── (other networking helpers)
+├── Resources/
+│   ├── Assets.xcassets
+│   ├── Info.plist
+│   └── Launch Screen.storyboard
 │
-├── NewsService/
-│   └── NewsResource.swift           # concrete news data source
-│
-├── StorageService/
-│   ├── JSONDiskStore.swift
-│   ├── JSONNewsCacheStore.swift
-│   ├── JSONBookmarksStore.swift
-│   ├── JSONRecentHistoryStore.swift
-│   └── MRUList.swift
-│
-├── View/
-│   ├── NewsView.swift
-│   ├── ExploreView.swift
-│   ├── BookmarksView.swift
-│   ├── SettingsView.swift
-│   ├── NewsDetailView.swift
-│   ├── NewsDetailScene.swift
-│   ├── NewsViewListItem.swift
-│   ├── CategoryChips.swift
-│   ├── ImageBuilderView.swift
-│   └── EmptyStateView.swift
-│
-├── ViewModel/
-│   ├── NewsViewModels/
-│   │   ├── NewsPaginationState.swift
-│   │   └── NewsViewModel.swift
-│   ├── ExploreViewModel.swift
-│   ├── BookmarksViewModel.swift
-│   ├── NewsDetailViewModel.swift
-│   └── SettingsViewModel.swift
-│
-└── Secrets/
-    └── APIKey (local-only; do not commit)
+├── Screenshots/
+├── README.md
 ```
 
 ---
@@ -201,27 +340,71 @@ NewsApp-SwiftUI-MVVM-Combine/
 ## Getting Started
 
 ### Prerequisites
-- A NewsAPI key (newsapi.org)
+
+- A NewsAPI key from [newsapi.org](https://newsapi.org/)
+- A NewsData key from [newsdata.io](https://newsdata.io/)
 
 ### Setup
-1. Open `NewsApp-SwiftUI-MVVM-Combine.xcodeproj` in Xcode.
-2. Select target `NewsApp-SwiftUI-MVVM-Combine`.
-3. Add a **User-Defined** build setting:
-   - Key: `API_KEY`
-   - Value: your NewsAPI key
-4. Ensure `Info.plist` reads the key via `$(API_KEY)`.
-5. Build and run the scheme `iOS-News-App-SwiftUI`.
 
-> Note: Keep API keys out of git. If you use a `Secrets/` file locally, ensure it’s gitignored.
+1. Open `NewsApp-SwiftUI.xcodeproj` in Xcode.
+2. Add your runtime config through `Info.plist`, xcconfig, or build settings.
+3. Configure these keys:
+   - `NEWS_API_KEY`
+   - `NEWSDATA_API_KEY`
+   - `NEWS_COUNTRY_CODE`
+   - `NEWS_LANGUAGE_CODE`
+4. Build and run the scheme `iOS-News-App-SwiftUI`.
+
+### Switching the active provider
+
+The active provider is selected in `App/NewsApp_SwiftUI.swift`:
+
+```swift
+appDI = .live(
+    selectedNewsProvider: .newsData
+)
+```
+
+Change it to:
+
+- `.newsAPI`
+- `.newsData`
+
+without changing screen code or ViewModel code.
+
+> Note: Keep API keys out of git. Local xcconfig/secrets files should stay uncommitted.
+
+---
+
+## Screenshots
+
+Check [Screenshots](Screenshots)
+
+- [01_news_landing_page_light.png](Screenshots/01_news_landing_page_light.png) — News landing page (Light)
+- [02_news_detailview_webpage_light_.png](Screenshots/02_news_detailview_webpage_light_.png) — Article detail (WebView) (Light)
+- [03_news_detailview_share_options_light.png](Screenshots/03_news_detailview_share_options_light.png) — Share options (Light)
+- [04_news_explore_sports_light.png](Screenshots/04_news_explore_sports_light.png) — Explore: Sports (Light)
+- [05_news_explore_sports_search_light.png](Screenshots/05_news_explore_sports_search_light.png) — Explore: Sports search (Light)
+- [06_bookmarks_light.png](Screenshots/06_bookmarks_light.png) — Bookmarks (Light)
+- [07_recent_history_light.png](Screenshots/07_recent_history_light.png) — Recent history (Light)
+- [08_settings_light.png](Screenshots/08_settings_light.png) — Settings (Light)
+- [9_news_landing_page_dark.png](Screenshots/9_news_landing_page_dark.png) — News landing page (Dark)
+- [10_news_explore_tech_dark.png](Screenshots/10_news_explore_tech_dark.png) — Explore: Tech (Dark)
+- [11_recent_history_dark.png](Screenshots/11_recent_history_dark.png) — Recent history (Dark)
+- [12_settings_dark.png](Screenshots/12_settings_dark.png) — Settings (Dark)
+
+---
+
+## Demo Video (Screen Recording)
+
+[Watch on YouTube](https://www.youtube.com/watch?v=Qhq0Y1JGW4M)
 
 ---
 
 ## Notes
 
-- Logging provider switches by runtime environment:
-  - `DEBUG` → `OSLoggerService`
-  - `RELEASE` → `RemoteLoggerService` placeholder (extension point)
-- No test target is currently included (planned: ViewModel + service tests)
+- `DEBUG` uses `OSLoggerService`
+- `RELEASE` uses `RemoteLoggerService` as the remote logging extension point
 
 ---
 

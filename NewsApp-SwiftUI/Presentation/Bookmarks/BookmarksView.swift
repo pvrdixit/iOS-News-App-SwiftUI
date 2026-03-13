@@ -1,0 +1,65 @@
+//
+//  BookmarksView.swift
+//  NewsApp-SwiftUI-MVVM-Combine
+//
+//  Created by Vijay Raj Dixit on 27/02/26.
+//
+
+import SwiftUI
+
+/// Screen that shows either saved bookmarks or recent-history articles.
+struct BookmarksView: View {
+    @ObservedObject var viewModel: BookmarksViewModel
+    @State private var selectedArticle: Article?
+
+    init(viewModel: BookmarksViewModel) {
+        self.viewModel = viewModel
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Picker("Saved Content", selection: $viewModel.selectedSegment) {
+                ForEach(BookmarksViewSegment.allCases) { segment in
+                    Text(segment.rawValue).tag(segment)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            
+            if viewModel.shouldShowEmptyState {
+                EmptyStateView(title: viewModel.emptyStateTitle, message: viewModel.emptyStateMessage, buttonTitle: nil, action: nil)
+            } else {
+                List {
+                    ForEach(viewModel.displayedArticles) { article in
+                        ArticleListItemView(
+                            credit: article.credit ?? "",
+                            date: ArticleDisplayFormatter.displayDate(from: article.date),
+                            title: article.title,
+                            imageURL: article.imageURL
+                        )
+                        .onTapGesture {
+                            selectedArticle = article
+                            viewModel.saveRecentlyViewed(article)
+                        }
+                    }
+                }
+                .listStyle(.plain)
+            }
+        }
+        .navigationTitle(viewModel.navigationTitle)
+        .navigationBarTitleDisplayMode(.inline)
+        .task(id: viewModel.selectedSegment) {
+            viewModel.loadSelectedSegment()
+        }
+        .navigationDestination(item: $selectedArticle) { article in
+            NewsDetailScene(article: article)
+        }
+    }
+}
+
+#Preview {
+    @MainActor in
+    let appDI = AppDI.preview()
+    return BookmarksView(viewModel: appDI.makeBookmarksViewModel())
+        .environment(\.appDI, appDI)
+}

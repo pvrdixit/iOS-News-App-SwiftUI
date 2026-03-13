@@ -18,7 +18,7 @@
 		B05A69262F2B920A00D71EDF /* Exceptions for "NewsApp-SwiftUI" folder in "NewsApp-SwiftUI" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Resources/Info.plist,
 			);
 			target = B05A68342F2B515200D71EDF /* NewsApp-SwiftUI */;
 		};
@@ -150,7 +150,7 @@
 		B05A683E2F2B515300D71EDF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = B05A68372F2B515200D71EDF /* NewsApp-SwiftUI */;
-			baseConfigurationReferenceRelativePath = Secrets/APIKey.xcconfig;
+			baseConfigurationReferenceRelativePath = Secrets/Secrets.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -280,7 +280,7 @@
 				DEVELOPMENT_TEAM = XYURRD5NF7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "NewsApp-SwiftUI/Info.plist";
+				INFOPLIST_FILE = "NewsApp-SwiftUI/Resources/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = News;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.news";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -320,7 +320,7 @@
 				DEVELOPMENT_TEAM = XYURRD5NF7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "NewsApp-SwiftUI/Info.plist";
+				INFOPLIST_FILE = "NewsApp-SwiftUI/Resources/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = News;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.news";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
