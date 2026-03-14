@@ -38,6 +38,8 @@ final class HomeViewModel: ObservableObject {
     private var paginationState = HeadlinesPaginationState(pageSize: 5)
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
+    private var pendingPreferenceRefresh = false
+    private var cancellables = Set<AnyCancellable>()
 
     var shouldShowLoadingOverlay: Bool {
         loadingState == .isLoading
@@ -71,12 +73,14 @@ final class HomeViewModel: ObservableObject {
         headlinesRepository: HeadlinesRepository,
         recentHistoryRepository: RecentHistoryRepository,
         newsCacheRepository: NewsCacheRepository,
+        preferenceDidChange: AnyPublisher<Void, Never>,
         logger: LoggerService
     ) {
         self.headlinesRepository = headlinesRepository
         self.recentHistoryRepository = recentHistoryRepository
         self.newsCacheRepository = newsCacheRepository
         self.logger = logger
+        observePreferenceChanges(preferenceDidChange)
     }
 
     /// Fetch articles
@@ -124,6 +128,31 @@ final class HomeViewModel: ObservableObject {
 /// Private Helpers
 /// Fetch flow and network error handling
 private extension HomeViewModel {
+    func observePreferenceChanges(_ preferenceDidChange: AnyPublisher<Void, Never>) {
+        preferenceDidChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.reloadForPreferenceChange()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    func reloadForPreferenceChange() async {
+        guard loadingState == .idle else {
+            pendingPreferenceRefresh = true
+            return
+        }
+
+        logger.info("Refreshing home feed after region/language change", category: .cache)
+        paginationState = HeadlinesPaginationState(pageSize: paginationState.pageSize)
+        hasLoadedFirstPageFromNetwork = false
+        articles = []
+        alertMessage = nil
+        await fetchNews()
+    }
+
     func fetchPage(cursor: String?, isFirstPage: Bool, _ state: LoadingState = .isLoading) async {
         guard loadingState == .idle else { return }
 
@@ -139,6 +168,7 @@ private extension HomeViewModel {
             if let deferredAlertMessage {
                 alertMessage = deferredAlertMessage
             }
+            schedulePendingPreferenceRefreshIfNeeded()
         }
 
         do {
@@ -186,6 +216,15 @@ private extension HomeViewModel {
         }
 
         saveToCache(articles: articles)
+    }
+
+    func schedulePendingPreferenceRefreshIfNeeded() {
+        guard pendingPreferenceRefresh else { return }
+
+        pendingPreferenceRefresh = false
+        Task { @MainActor [weak self] in
+            await self?.reloadForPreferenceChange()
+        }
     }
 }
 

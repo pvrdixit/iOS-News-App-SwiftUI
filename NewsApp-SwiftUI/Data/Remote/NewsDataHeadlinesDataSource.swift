@@ -64,14 +64,17 @@ private extension NewsDataHeadlinesDataSource {
         pageSize: Int,
         cursor: String?
     ) -> URL? {
+        let selectedCountryCode = NewsDataPreferences.countryCode(default: countryCode)
+        let selectedLanguageCode = NewsDataPreferences.languageCode(default: languageCode)
+
         var components = URLComponents()
         components.scheme = "https"
         components.host = "newsdata.io"
         components.path = "/api/1/latest"
         components.queryItems = [
             URLQueryItem(name: "apikey", value: apiKey),
-            URLQueryItem(name: "country", value: countryCode),
-            URLQueryItem(name: "language", value: languageCode),
+            URLQueryItem(name: "country", value: selectedCountryCode),
+            URLQueryItem(name: "language", value: selectedLanguageCode),
             URLQueryItem(name: "size", value: "\(pageSize)"),
             URLQueryItem(name: "removeduplicate", value: "1")
         ]
@@ -89,7 +92,6 @@ private extension NewsDataHeadlinesDataSource {
             components.queryItems?.append(URLQueryItem(name: "page", value: cursor))
         }
 
-        print(components.url ?? "")
         return components.url
     }
 

@@ -27,13 +27,15 @@ struct SettingsLabelItem: Identifiable {
 }
 
 @MainActor
-/// Presentation state container for the settings screen and its destructive actions.
+/// Presentation state container for settings, including NewsData region/language selection and clear-data actions.
 final class SettingsViewModel: ObservableObject {
     let navigationTitle = "Settings"
-    let regionSectionTitle = "Region"
-    let regionLabelTitle = "Region"
-    let regionLabelSystemImage = "globe"
-    let regionCode: String
+    let regionSectionTitle = "Region & Language"
+    let countryLabelTitle = "Country"
+    let languageLabelTitle = "Language"
+    let selectionBlockedMessage = "Sorry country change and language change is not allowed for current source"
+    let selectCountryTitle = "Select Country"
+    let selectLanguageTitle = "Select Language"
     let storageSectionTitle = "Storage"
     let aboutSectionTitle = "About"
     let openSourceTitle = "Open Source"
@@ -48,23 +50,47 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var pendingAction: ClearDataAction?
     @Published var showConfirmAlert = false
+    @Published private(set) var selectedCountryCode: String
+    @Published private(set) var selectedLanguageCode: String
 
     let actions: [ClearDataAction]
+    let countryOptions: [SelectListItem]
+    let languageOptions: [SelectListItem]
     let privacyItems: [SettingsLabelItem] = [
         SettingsLabelItem(id: "noAds", title: "No Ads", systemImage: "checkmark.seal"),
         SettingsLabelItem(id: "noDataCollection", title: "No data collection", systemImage: "hand.raised")
     ]
+    private let newsCacheRepository: NewsCacheRepository
     private let logger: LoggerService
+    let allowsRegionAndLanguageChanges: Bool
+    private let saveCountryCode: (String) -> Void
+    private let saveLanguageCode: (String) -> Void
+    private let notifyPreferenceChanged: () -> Void
 
     init(
         newsCacheRepository: NewsCacheRepository,
         bookmarkRepository: BookmarkRepository,
         recentHistoryRepository: RecentHistoryRepository,
-        regionCode: String,
+        allowsRegionAndLanguageChanges: Bool,
+        selectedCountryCode: String,
+        selectedLanguageCode: String,
+        countryOptions: [SelectListItem],
+        languageOptions: [SelectListItem],
+        saveCountryCode: @escaping (String) -> Void,
+        saveLanguageCode: @escaping (String) -> Void,
+        notifyPreferenceChanged: @escaping () -> Void,
         logger: LoggerService
     ) {
+        self.newsCacheRepository = newsCacheRepository
         self.logger = logger
-        self.regionCode = regionCode
+        self.allowsRegionAndLanguageChanges = allowsRegionAndLanguageChanges
+        self.selectedCountryCode = selectedCountryCode
+        self.selectedLanguageCode = selectedLanguageCode
+        self.countryOptions = countryOptions
+        self.languageOptions = languageOptions
+        self.saveCountryCode = saveCountryCode
+        self.saveLanguageCode = saveLanguageCode
+        self.notifyPreferenceChanged = notifyPreferenceChanged
 
         self.actions = [
             ClearDataAction(
@@ -105,6 +131,14 @@ final class SettingsViewModel: ObservableObject {
         pendingAction?.message ?? ""
     }
 
+    var selectedCountryName: String {
+        displayName(for: selectedCountryCode, in: countryOptions, fallback: selectedCountryCode.uppercased())
+    }
+
+    var selectedLanguageName: String {
+        displayName(for: selectedLanguageCode, in: languageOptions, fallback: selectedLanguageCode.uppercased())
+    }
+
     func prompt(_ action: ClearDataAction) {
         pendingAction = action
         showConfirmAlert = true
@@ -132,5 +166,43 @@ final class SettingsViewModel: ObservableObject {
         }
 
         clearPendingAction()
+    }
+
+    func selectCountry(code: String) {
+        guard allowsRegionAndLanguageChanges else { return }
+        guard selectedCountryCode != code else { return }
+
+        selectedCountryCode = code
+        saveCountryCode(code)
+        handlePreferenceChange()
+    }
+
+    func selectLanguage(code: String) {
+        guard allowsRegionAndLanguageChanges else { return }
+        guard selectedLanguageCode != code else { return }
+
+        selectedLanguageCode = code
+        saveLanguageCode(code)
+        handlePreferenceChange()
+    }
+}
+
+private extension SettingsViewModel {
+    func handlePreferenceChange() {
+        do {
+            try newsCacheRepository.clear()
+        } catch {
+            logger.error(
+                "Cache clear failed after region/language update",
+                category: .cache,
+                metadata: ["error": error.localizedDescription]
+            )
+        }
+
+        notifyPreferenceChanged()
+    }
+
+    func displayName(for code: String, in options: [SelectListItem], fallback: String) -> String {
+        options.first(where: { $0.id == code })?.title ?? fallback
     }
 }

@@ -13,7 +13,7 @@ extension View {
                    secondaryCancelButton: (title: String, action: () -> Void)? = nil,
                    destructiveAction: (() -> Void)? = nil) -> some View {
         
-        alert(title ?? "Error", isPresented: isPresented) {            
+        alert(title ?? "", isPresented: isPresented) {
             if let primaryRightButton {
                 Button(primaryRightButton.title) {
                     primaryRightButton.action()
@@ -25,7 +25,7 @@ extension View {
                     secondaryCancelButton.action()
                 }
             } else {
-                Button("Cancel", role: .cancel) {}
+                Button("Ok", role: .cancel) {}
             }
             
             if let destructiveAction {

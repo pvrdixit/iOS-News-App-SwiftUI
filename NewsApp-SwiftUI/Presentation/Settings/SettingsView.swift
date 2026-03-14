@@ -8,9 +8,11 @@
 
 import SwiftUI
 
-/// Settings screen for read-only app info and destructive local-data actions.
+/// Settings screen for region/language selection, app info, and destructive local-data actions.
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    @State private var activeSelection: SettingsSelectionType?
+    @State private var showSelectionBlockedAlert = false
 
     init(viewModel: SettingsViewModel) {
         self.viewModel = viewModel
@@ -19,11 +21,19 @@ struct SettingsView: View {
     var body: some View {
         List {
             Section(viewModel.regionSectionTitle) {
-                HStack {
-                    Label(viewModel.regionLabelTitle, systemImage: viewModel.regionLabelSystemImage)
-                    Spacer()
-                    Text(viewModel.regionCode).foregroundStyle(.secondary)
+                Button {
+                    presentSelection(.country)
+                } label: {
+                    settingRow(title: viewModel.countryLabelTitle, value: viewModel.selectedCountryName)
                 }
+                .foregroundStyle(.primary)
+
+                Button {
+                    presentSelection(.language)
+                } label: {
+                    settingRow(title: viewModel.languageLabelTitle, value: viewModel.selectedLanguageName)
+                }
+                .foregroundStyle(.primary)
             }
             
             Section(viewModel.storageSectionTitle) {
@@ -73,6 +83,57 @@ struct SettingsView: View {
                 viewModel.runPendingAction()
             }
         )
+        .showAlert(message: viewModel.selectionBlockedMessage, isPresented: $showSelectionBlockedAlert)
+        .sheet(item: $activeSelection) { selection in
+            NavigationStack {
+                switch selection {
+                case .country:
+                    SelectListView(
+                        title: viewModel.selectCountryTitle,
+                        items: viewModel.countryOptions,
+                        selectedID: viewModel.selectedCountryCode
+                    ) { item in
+                        viewModel.selectCountry(code: item.id)
+                    }
+                case .language:
+                    SelectListView(
+                        title: viewModel.selectLanguageTitle,
+                        items: viewModel.languageOptions,
+                        selectedID: viewModel.selectedLanguageCode
+                    ) { item in
+                        viewModel.selectLanguage(code: item.id)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Identifies which searchable picker sheet should be presented from Settings.
+private enum SettingsSelectionType: String, Identifiable {
+    case country
+    case language
+
+    var id: String { rawValue }
+}
+
+private extension SettingsView {
+    func presentSelection(_ selection: SettingsSelectionType) {
+        guard viewModel.allowsRegionAndLanguageChanges else {
+            showSelectionBlockedAlert = true
+            return
+        }
+
+        activeSelection = selection
+    }
+
+    func settingRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

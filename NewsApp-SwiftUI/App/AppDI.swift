@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 import SwiftUI
 
 /// Central composition root that assembles infrastructure, repositories, and view models.
@@ -17,6 +18,7 @@ final class AppDI {
     private let bookmarkRepository: BookmarkRepository
     private let recentHistoryRepository: RecentHistoryRepository
     private let newsCacheRepository: NewsCacheRepository
+    private let preferenceDidChange = PassthroughSubject<Void, Never>()
 
     init(
         configuration: AppConfiguration = .load(),
@@ -60,6 +62,7 @@ final class AppDI {
             headlinesRepository: headlinesRepository,
             recentHistoryRepository: recentHistoryRepository,
             newsCacheRepository: newsCacheRepository,
+            preferenceDidChange: preferenceDidChange.eraseToAnyPublisher(),
             logger: logger
         )
     }
@@ -75,11 +78,29 @@ final class AppDI {
 
     @MainActor
     func makeSettingsViewModel() -> SettingsViewModel {
-        SettingsViewModel(
+        let selectedCountryCode = selectedNewsProvider == .newsData
+            ? NewsDataPreferences.countryCode(default: configuration.countryCode)
+            : configuration.countryCode
+        let selectedLanguageCode = selectedNewsProvider == .newsData
+            ? NewsDataPreferences.languageCode(default: configuration.languageCode)
+            : configuration.languageCode
+
+        return SettingsViewModel(
             newsCacheRepository: newsCacheRepository,
             bookmarkRepository: bookmarkRepository,
             recentHistoryRepository: recentHistoryRepository,
-            regionCode: configuration.countryCode.uppercased(),
+            allowsRegionAndLanguageChanges: selectedNewsProvider == .newsData,
+            selectedCountryCode: selectedCountryCode,
+            selectedLanguageCode: selectedLanguageCode,
+            countryOptions: Country.allCases
+                .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
+                .sorted { $0.title < $1.title },
+            languageOptions: Language.allCases
+                .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
+                .sorted { $0.title < $1.title },
+            saveCountryCode: { NewsDataPreferences.setCountryCode($0) },
+            saveLanguageCode: { NewsDataPreferences.setLanguageCode($0) },
+            notifyPreferenceChanged: { self.preferenceDidChange.send(()) },
             logger: logger
         )
     }
@@ -90,6 +111,7 @@ final class AppDI {
             headlinesRepository: headlinesRepository,
             recentHistoryRepository: recentHistoryRepository,
             availableCategories: ExploreCategoriesProvider.categories(for: selectedNewsProvider),
+            preferenceDidChange: preferenceDidChange.eraseToAnyPublisher(),
             logger: logger
         )
     }

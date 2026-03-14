@@ -1,6 +1,6 @@
 # iOS News App (SwiftUI + MVVM + Clean Architecture)
 
-A production-style iOS News app built with **SwiftUI**, **MVVM**, and a lightweight **Clean Architecture** split, featuring **multiple remote news providers**, **async/await networking**, **provider-agnostic pagination**, **disk-backed caching**, and clean **UI state management**.
+A production-style iOS News app built with **SwiftUI**, **MVVM**, and a lightweight **Clean Architecture** split, featuring **multiple remote news providers**, **async/await networking**, **provider-agnostic pagination**, **disk-backed caching**, provider-aware **region/language selection**, and clean **UI state management**.
 
 Built as a portfolio project to demonstrate scalable architecture, resilient data handling, and a setup where **new providers can be added or removed without rewriting the presentation layer**.
 
@@ -14,14 +14,13 @@ Built as a portfolio project to demonstrate scalable architecture, resilient dat
 
 This project demonstrates:
 
-- **MVVM + Clean Architecture** with a clear split between `App`, `Presentation`, `Domain`, `Data`, and `Core`
-- A **multi-source news architecture** where one provider is selected at app composition time
-- A provider adapter pattern that makes it easy to **add or remove a source**
-- **Provider-agnostic domain contracts** (`HeadlinesQuery`, `HeadlinesPage`, `HeadlinesRepository`)
-- **Offline-first fallback** for headlines (cached first page shown when initial fetch fails)
-- Reusable **JSON disk storage** for cache, bookmarks, and recent history
-- Domain-level **error mapping** so infrastructure failures do not leak directly into the UI
-- Lightweight dependency injection with **`AppDI`**, **`AppRouter`**, and **provider factories**
+- Designing a **scalable MVVM + Clean Architecture** structure with a clear split between `App`, `Presentation`, `Domain`, `Data`, and `Core`
+- Building a **multi-source news platform** where providers can be swapped with minimal impact on the UI layer
+- Normalizing different API contracts behind **provider-agnostic domain models** such as `HeadlinesQuery`, `HeadlinesPage`, and `HeadlinesRepository`
+- Handling **pagination, caching, and persistence** in a reusable way rather than baking source-specific logic into screens
+- Supporting **provider-aware runtime preferences** for NewsData country and language with cache invalidation and feed refresh
+- Mapping infrastructure failures into **domain-safe errors** before they reach the presentation layer
+- Using **lightweight dependency composition** with `AppDI`, `AppRouter`, and provider factories instead of heavy container frameworks
 
 ---
 
@@ -34,6 +33,9 @@ This project demonstrates:
 - **Recently viewed (MRU)** history with max-item trimming
 - **Cached headlines fallback** when first-page fetch fails
 - **Settings** actions to clear cache, bookmarks, and history
+- **Provider-aware region & language selection**
+- **Searchable selection list** for NewsData country and language changes
+- **Automatic cache clear + feed refresh** when NewsData country/language changes
 - **Switchable provider architecture** supporting:
   - `NewsAPI`
   - `NewsData`
@@ -42,16 +44,16 @@ This project demonstrates:
 
 ## Skills Demonstrated
 
-- SwiftUI composition with a clean **tab-based app shell**
-- MVVM with thin Views and **screen-focused ViewModels**
-- Lightweight Clean Architecture with **Domain contracts** and **Data implementations**
-- **Dependency composition** through `AppDI` instead of view-level wiring
-- async/await networking with **normalized pagination**
-- Multiple provider integrations hidden behind a **single app-facing repository**
-- Disk persistence (JSON) for cache, bookmarks, and recent history
-- Error mapping from low-level failures -> **domain errors** -> **UI-safe messages**
-- Structured logging with build-configuration-based logger selection
-- Reusable UI components and consistent **empty / loading / error** states
+- Architecting a SwiftUI app with a clean **tab-based shell**, reusable scenes, and screen-focused ViewModels
+- Applying **MVVM** in a practical way with thin Views, explicit UI state, and async view-model driven flows
+- Designing a lightweight **Clean Architecture** setup that keeps Domain contracts stable while Data handles provider-specific work
+- Building **provider abstraction layers** so NewsAPI and NewsData can plug into the same app-facing repository flow
+- Implementing **async/await networking**, normalized pagination, duplicate filtering, and resilient fetch behavior
+- Creating **JSON-backed persistence** for cache, bookmarks, and recent history with shared disk storage utilities
+- Handling **runtime configuration and provider-specific preferences** without rewriting the feed screens
+- Mapping low-level failures into **domain errors** and then into UI-safe presentation messages
+- Adding structured logging with environment-aware logger selection for easier debugging and future production monitoring
+- Maintaining consistent **loading, empty, error, detail, and settings flows** across the app
 
 ---
 
@@ -187,6 +189,16 @@ View
   <--> JSONDiskStore
 ```
 
+### Provider Preference Flow
+
+```text
+SettingsView
+  <--> SettingsViewModel
+  <--> preference storage
+  <--> NewsCacheRepository
+  -> refresh Home / Explore after preference change
+```
+
 ---
 
 ## Multi-Source Provider Architecture
@@ -205,6 +217,7 @@ Instead:
 - `RemoteHeadlinesDataSource` defines the provider adapter contract
 - `NewsAPIHeadlinesDataSource` handles NewsAPI requests and page-number pagination
 - `NewsDataHeadlinesDataSource` handles NewsData requests and token-based pagination
+- `NewsDataHeadlinesDataSource` also applies user-selected country/language preferences
 - `HeadlinesRepositoryImpl` normalizes the selected provider into one domain contract
 - `HeadlinesQuery` and `HeadlinesPage` are the only models the Presentation layer cares about
 
@@ -239,7 +252,7 @@ That also means removing a provider is a localized change rather than a rewrite 
 - Combine (observable presentation state)
 - Swift Concurrency (`async/await`)
 - WebKit (article detail)
-- Kingfisher `8.6.2` (remote image loading / caching)
+- Kingfisher `8.8.0` (remote image loading / caching)
 - `os.Logger` style structured logging
 
 ---
@@ -253,6 +266,8 @@ That also means removing a provider is a localized change rather than a rewrite 
 - Bookmark toggle with persistent storage
 - Search + category filtering in Explore
 - Provider-specific category availability resolved outside the UI layer
+- NewsData duplicate filtering before article mapping
+- NewsData country/language preference changes clear cache and reload feeds
 - Infrastructure errors translated into domain `AppError` values before reaching Presentation
 
 ---
@@ -299,6 +314,7 @@ NewsApp-SwiftUI/
 │   ├── Remote/
 │   │   ├── NewsAPIHeadlinesDataSource.swift
 │   │   ├── NewsDataHeadlinesDataSource.swift
+│   │   ├── NewsDataPreferences.swift
 │   │   └── RemoteHeadlinesDataSource.swift
 │   └── Repositories/
 │       └── HeadlinesRepositoryImpl.swift
@@ -318,6 +334,7 @@ NewsApp-SwiftUI/
 │   ├── Home/
 │   ├── NewsDetail/
 │   ├── Settings/
+│   │   └── SelectListView.swift
 │   └── Shared/
 │
 ├── Resources/
@@ -348,6 +365,8 @@ NewsApp-SwiftUI/
    - `NEWS_COUNTRY_CODE`
    - `NEWS_LANGUAGE_CODE`
 4. Build and run the scheme `iOS-News-App-SwiftUI`.
+
+`NEWS_COUNTRY_CODE` and `NEWS_LANGUAGE_CODE` act as startup defaults. When `NewsData` is the active source, the user can override them in Settings at runtime.
 
 ### Switching the active provider
 

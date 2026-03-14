@@ -35,6 +35,8 @@ final class ExploreViewModel: ObservableObject {
     private let loadMoreThreshold = 1
     private var hasLoadedFirstPageFromNetwork = false
     private var isClearingSearchForCategoryChange = false
+    private var pendingPreferenceRefresh = false
+    private var cancellables = Set<AnyCancellable>()
 
     var shouldShowEmptyState: Bool {
         !isLoading && articles.isEmpty
@@ -68,6 +70,7 @@ final class ExploreViewModel: ObservableObject {
         headlinesRepository: HeadlinesRepository,
         recentHistoryRepository: RecentHistoryRepository,
         availableCategories: [ExploreCategory],
+        preferenceDidChange: AnyPublisher<Void, Never>,
         logger: LoggerService
     ) {
         let resolvedCategories = availableCategories.isEmpty ? [.general] : availableCategories
@@ -77,6 +80,7 @@ final class ExploreViewModel: ObservableObject {
         self.availableCategories = resolvedCategories
         self.selectedCategory = resolvedCategories.first ?? .general
         self.logger = logger
+        observePreferenceChanges(preferenceDidChange)
     }
 
     func refresh() async {
@@ -142,6 +146,31 @@ final class ExploreViewModel: ObservableObject {
 }
 
 private extension ExploreViewModel {
+    func observePreferenceChanges(_ preferenceDidChange: AnyPublisher<Void, Never>) {
+        preferenceDidChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.reloadForPreferenceChange()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    func reloadForPreferenceChange() async {
+        guard !isLoading else {
+            pendingPreferenceRefresh = true
+            return
+        }
+
+        logger.info("Refreshing explore feed after region/language change", category: .cache)
+        paginationState = HeadlinesPaginationState(pageSize: paginationState.pageSize)
+        hasLoadedFirstPageFromNetwork = false
+        articles = []
+        alertMessage = nil
+        await refresh()
+    }
+
     var normalizedSearch: String? {
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
@@ -155,7 +184,10 @@ private extension ExploreViewModel {
             alertMessage = nil
         }
 
-        defer { isLoading = false }
+        defer {
+            isLoading = false
+            schedulePendingPreferenceRefreshIfNeeded()
+        }
 
         do {
             let headlinesPage = try await headlinesRepository.fetchTopHeadlines(
@@ -202,5 +234,14 @@ private extension ExploreViewModel {
 
         let triggerIndex = max(articles.count - loadMoreThreshold, 0)
         return index >= triggerIndex
+    }
+
+    func schedulePendingPreferenceRefreshIfNeeded() {
+        guard pendingPreferenceRefresh else { return }
+
+        pendingPreferenceRefresh = false
+        Task { @MainActor [weak self] in
+            await self?.reloadForPreferenceChange()
+        }
     }
 }
