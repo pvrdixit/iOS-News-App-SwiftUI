@@ -78,28 +78,19 @@ final class AppDI {
 
     @MainActor
     func makeSettingsViewModel() -> SettingsViewModel {
-        let selectedCountryCode = selectedNewsProvider == .newsData
-            ? NewsDataPreferences.countryCode(default: configuration.countryCode)
-            : configuration.countryCode
-        let selectedLanguageCode = selectedNewsProvider == .newsData
-            ? NewsDataPreferences.languageCode(default: configuration.languageCode)
-            : configuration.languageCode
+        let regionLanguageConfiguration = makeRegionLanguageConfiguration()
 
         return SettingsViewModel(
             newsCacheRepository: newsCacheRepository,
             bookmarkRepository: bookmarkRepository,
             recentHistoryRepository: recentHistoryRepository,
-            allowsRegionAndLanguageChanges: selectedNewsProvider == .newsData,
-            selectedCountryCode: selectedCountryCode,
-            selectedLanguageCode: selectedLanguageCode,
-            countryOptions: Country.allCases
-                .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
-                .sorted { $0.title < $1.title },
-            languageOptions: Language.allCases
-                .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
-                .sorted { $0.title < $1.title },
-            saveCountryCode: { NewsDataPreferences.setCountryCode($0) },
-            saveLanguageCode: { NewsDataPreferences.setLanguageCode($0) },
+            allowsRegionAndLanguageChanges: regionLanguageConfiguration != nil,
+            selectedCountryCode: regionLanguageConfiguration?.selectedCountryCode ?? configuration.countryCode,
+            selectedLanguageCode: regionLanguageConfiguration?.selectedLanguageCode ?? configuration.languageCode,
+            countryOptions: regionLanguageConfiguration?.countryOptions ?? [],
+            languageOptions: regionLanguageConfiguration?.languageOptions ?? [],
+            saveCountryCode: { regionLanguageConfiguration?.saveCountryCode($0) },
+            saveLanguageCode: { regionLanguageConfiguration?.saveLanguageCode($0) },
             notifyPreferenceChanged: { self.preferenceDidChange.send(()) },
             logger: logger
         )
@@ -123,6 +114,50 @@ final class AppDI {
             bookmarkRepository: bookmarkRepository,
             logger: logger
         )
+    }
+}
+
+private extension AppDI {
+    struct RegionLanguageConfiguration {
+        let selectedCountryCode: String
+        let selectedLanguageCode: String
+        let countryOptions: [SelectListItem]
+        let languageOptions: [SelectListItem]
+        let saveCountryCode: (String) -> Void
+        let saveLanguageCode: (String) -> Void
+    }
+
+    func makeRegionLanguageConfiguration() -> RegionLanguageConfiguration? {
+        switch selectedNewsProvider {
+        case .newsAPI:
+            return nil
+        case .newsData:
+            return RegionLanguageConfiguration(
+                selectedCountryCode: NewsDataPreferences.countryCode(default: configuration.countryCode),
+                selectedLanguageCode: NewsDataPreferences.languageCode(default: configuration.languageCode),
+                countryOptions: NewsDataSupportedCountries.allCases
+                    .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
+                    .sorted { $0.title < $1.title },
+                languageOptions: NewsDataSupportedLanguages.allCases
+                    .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
+                    .sorted { $0.title < $1.title },
+                saveCountryCode: { NewsDataPreferences.setCountryCode($0) },
+                saveLanguageCode: { NewsDataPreferences.setLanguageCode($0) }
+            )
+        case .gNews:
+            return RegionLanguageConfiguration(
+                selectedCountryCode: GNewsPreferences.countryCode(default: configuration.countryCode),
+                selectedLanguageCode: GNewsPreferences.languageCode(default: configuration.languageCode),
+                countryOptions: GNewsSupportedCountries.allCases
+                    .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
+                    .sorted { $0.title < $1.title },
+                languageOptions: GNewsSupportedLanguages.allCases
+                    .map { SelectListItem(id: $0.rawValue, title: $0.displayName) }
+                    .sorted { $0.title < $1.title },
+                saveCountryCode: { GNewsPreferences.setCountryCode($0) },
+                saveLanguageCode: { GNewsPreferences.setLanguageCode($0) }
+            )
+        }
     }
 }
 

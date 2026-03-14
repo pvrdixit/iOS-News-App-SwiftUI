@@ -11,6 +11,7 @@ import Foundation
 enum NewsProviderID: String {
     case newsAPI = "newsapi"
     case newsData = "newsdata"
+    case gNews = "gnews"
 
     var displayName: String {
         switch self {
@@ -18,6 +19,8 @@ enum NewsProviderID: String {
             return "NewsAPI"
         case .newsData:
             return "NewsData"
+        case .gNews:
+            return "GNews"
         }
     }
 }

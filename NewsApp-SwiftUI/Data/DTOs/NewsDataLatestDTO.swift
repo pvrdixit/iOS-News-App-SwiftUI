@@ -43,7 +43,7 @@ struct NewsDataArticleDTO: Decodable {
 
 
 /// NewsData supported countries list
-enum Country: String, CaseIterable, Identifiable, Codable {
+enum NewsDataSupportedCountries: String, CaseIterable, Identifiable, Codable {
     case united_states = "us"
     case united_kingdom = "gb"
     case united_arab_emirates = "ae"
@@ -300,7 +300,7 @@ enum Country: String, CaseIterable, Identifiable, Codable {
 
 
 /// NewsData supported languages list
-enum Language: String, CaseIterable, Identifiable, Codable {
+enum NewsDataSupportedLanguages: String, CaseIterable, Identifiable, Codable {
     case afrikaans = "af"
     case albanian = "sq"
     case amharic = "am"
@@ -399,4 +399,3 @@ enum Language: String, CaseIterable, Identifiable, Codable {
             .firstCapitalized
     }
 }
-

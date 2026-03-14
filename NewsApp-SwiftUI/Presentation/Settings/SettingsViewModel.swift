@@ -27,7 +27,7 @@ struct SettingsLabelItem: Identifiable {
 }
 
 @MainActor
-/// Presentation state container for settings, including NewsData region/language selection and clear-data actions.
+/// Presentation state container for settings, including provider-aware region/language selection and clear-data actions.
 final class SettingsViewModel: ObservableObject {
     let navigationTitle = "Settings"
     let regionSectionTitle = "Region & Language"

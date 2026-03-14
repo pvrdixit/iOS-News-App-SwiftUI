@@ -7,6 +7,7 @@ Built as a portfolio project to demonstrate scalable architecture, resilient dat
 **Data source credit:**
 - [NewsAPI.org](https://newsapi.org/)
 - [NewsData.io](https://newsdata.io/)
+- [GNews](https://gnews.io/)
 
 ---
 
@@ -18,7 +19,7 @@ This project demonstrates:
 - Building a **multi-source news platform** where providers can be swapped with minimal impact on the UI layer
 - Normalizing different API contracts behind **provider-agnostic domain models** such as `HeadlinesQuery`, `HeadlinesPage`, and `HeadlinesRepository`
 - Handling **pagination, caching, and persistence** in a reusable way rather than baking source-specific logic into screens
-- Supporting **provider-aware runtime preferences** for NewsData country and language with cache invalidation and feed refresh
+- Supporting **provider-aware runtime preferences** for NewsData and GNews country/language selection with cache invalidation and feed refresh
 - Mapping infrastructure failures into **domain-safe errors** before they reach the presentation layer
 - Using **lightweight dependency composition** with `AppDI`, `AppRouter`, and provider factories instead of heavy container frameworks
 
@@ -39,6 +40,7 @@ This project demonstrates:
 - **Switchable provider architecture** supporting:
   - `NewsAPI`
   - `NewsData`
+  - `GNews`
 
 ---
 
@@ -47,7 +49,7 @@ This project demonstrates:
 - Architecting a SwiftUI app with a clean **tab-based shell**, reusable scenes, and screen-focused ViewModels
 - Applying **MVVM** in a practical way with thin Views, explicit UI state, and async view-model driven flows
 - Designing a lightweight **Clean Architecture** setup that keeps Domain contracts stable while Data handles provider-specific work
-- Building **provider abstraction layers** so NewsAPI and NewsData can plug into the same app-facing repository flow
+- Building **provider abstraction layers** so NewsAPI, NewsData, and GNews can plug into the same app-facing repository flow
 - Implementing **async/await networking**, normalized pagination, duplicate filtering, and resilient fetch behavior
 - Creating **JSON-backed persistence** for cache, bookmarks, and recent history with shared disk storage utilities
 - Handling **runtime configuration and provider-specific preferences** without rewriting the feed screens
@@ -175,7 +177,7 @@ View
 AppDI
   -> selected NewsProviderID
   -> HeadlinesDataSourceFactory
-  -> NewsAPIHeadlinesDataSource / NewsDataHeadlinesDataSource
+  -> NewsAPIHeadlinesDataSource / NewsDataHeadlinesDataSource / GNewsHeadlinesDataSource
   -> HeadlinesRepositoryImpl
 ```
 
@@ -217,7 +219,8 @@ Instead:
 - `RemoteHeadlinesDataSource` defines the provider adapter contract
 - `NewsAPIHeadlinesDataSource` handles NewsAPI requests and page-number pagination
 - `NewsDataHeadlinesDataSource` handles NewsData requests and token-based pagination
-- `NewsDataHeadlinesDataSource` also applies user-selected country/language preferences
+- `GNewsHeadlinesDataSource` handles GNews requests and page-number pagination
+- `NewsDataHeadlinesDataSource` and `GNewsHeadlinesDataSource` apply provider-specific country/language preferences
 - `HeadlinesRepositoryImpl` normalizes the selected provider into one domain contract
 - `HeadlinesQuery` and `HeadlinesPage` are the only models the Presentation layer cares about
 
@@ -354,6 +357,7 @@ NewsApp-SwiftUI/
 
 - A NewsAPI key from [newsapi.org](https://newsapi.org/)
 - A NewsData key from [newsdata.io](https://newsdata.io/)
+- A GNews key from [gnews.io](https://gnews.io/)
 
 ### Setup
 
@@ -362,11 +366,12 @@ NewsApp-SwiftUI/
 3. Configure these keys:
    - `NEWS_API_KEY`
    - `NEWSDATA_API_KEY`
+   - `GNEWS_API_KEY`
    - `NEWS_COUNTRY_CODE`
    - `NEWS_LANGUAGE_CODE`
 4. Build and run the scheme `iOS-News-App-SwiftUI`.
 
-`NEWS_COUNTRY_CODE` and `NEWS_LANGUAGE_CODE` act as startup defaults. When `NewsData` is the active source, the user can override them in Settings at runtime.
+`NEWS_COUNTRY_CODE` and `NEWS_LANGUAGE_CODE` act as startup defaults. When `NewsData` or `GNews` is the active source, the user can override them in Settings at runtime.
 
 ### Switching the active provider
 
@@ -382,6 +387,7 @@ Change it to:
 
 - `.newsAPI`
 - `.newsData`
+- `.gNews`
 
 without changing screen code or ViewModel code.
 

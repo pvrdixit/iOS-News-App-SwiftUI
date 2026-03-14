@@ -35,6 +35,17 @@ enum ExploreCategoriesProvider {
                 .science,
                 .environment
             ]
+        case .gNews:
+            return [
+                .top,
+                .world,
+                .business,
+                .technology,
+                .sports,
+                .entertainment,
+                .health,
+                .science
+            ]
         }
     }
 }

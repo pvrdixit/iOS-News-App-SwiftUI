@@ -28,6 +28,14 @@ enum HeadlinesDataSourceFactory {
                 languageCode: configuration.languageCode,
                 networkService: networkService
             )
+        case .gNews:
+            guard let apiKey = configuration.gNewsAPIKey else { return nil }
+            return GNewsHeadlinesDataSource(
+                apiKey: apiKey,
+                countryCode: configuration.countryCode,
+                languageCode: configuration.languageCode,
+                networkService: networkService
+            )
         }
     }
 }
