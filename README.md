@@ -50,7 +50,7 @@ This project demonstrates:
 - Multiple provider integrations hidden behind a **single app-facing repository**
 - Disk persistence (JSON) for cache, bookmarks, and recent history
 - Error mapping from low-level failures -> **domain errors** -> **UI-safe messages**
-- Structured logging with environment-based logger selection
+- Structured logging with build-configuration-based logger selection
 - Reusable UI components and consistent **empty / loading / error** states
 
 ---
@@ -108,7 +108,6 @@ Responsible for:
 
 - app-facing entities
 - repository contracts
-- use cases
 - provider-agnostic query / response models
 - domain-level errors
 
@@ -116,7 +115,6 @@ Key folders:
 
 - `Domain/Entities/`
 - `Domain/Repositories/`
-- `Domain/UseCases/`
 - `Domain/Errors/`
 
 #### Data
@@ -162,7 +160,6 @@ Key folders:
 ```text
 View
   <--> ViewModel
-  <--> FetchTopHeadlinesUseCase
   <--> HeadlinesRepository (protocol)
   <--> HeadlinesRepositoryImpl
   <--> RemoteHeadlinesDataSource
@@ -214,7 +211,7 @@ Instead:
 That means the UI always works with:
 
 ```swift
-FetchTopHeadlinesUseCase.execute(_ query: HeadlinesQuery)
+try await headlinesRepository.fetchTopHeadlines(query)
 ```
 
 and never has to care which API produced the headlines.
@@ -304,19 +301,16 @@ NewsApp-SwiftUI/
 │   │   ├── NewsDataHeadlinesDataSource.swift
 │   │   └── RemoteHeadlinesDataSource.swift
 │   └── Repositories/
-│       ├── HeadlinesRepositoryImpl.swift
-│       └── (remote repository implementations)
+│       └── HeadlinesRepositoryImpl.swift
 │
 ├── Domain/
 │   ├── Entities/
 │   │   └── Article.swift
 │   ├── Errors/
 │   │   └── AppError.swift
-│   ├── Repositories/
-│   │   ├── HeadlinesRepository.swift
-│   │   └── StorageRepositories.swift
-│   └── UseCases/
-│       └── HeadlinesUseCases.swift
+│   └── Repositories/
+│       ├── HeadlinesRepository.swift
+│       └── StorageRepositories.swift
 │
 ├── Presentation/
 │   ├── Bookmarks/
@@ -360,7 +354,7 @@ NewsApp-SwiftUI/
 The active provider is selected in `App/NewsApp_SwiftUI.swift`:
 
 ```swift
-appDI = .live(
+appDI = AppDI(
     selectedNewsProvider: .newsData
 )
 ```

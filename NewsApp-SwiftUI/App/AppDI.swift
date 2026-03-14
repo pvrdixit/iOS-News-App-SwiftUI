@@ -8,102 +8,56 @@
 import Foundation
 import SwiftUI
 
-/// Describes the runtime environment so infrastructure can swap implementations safely.
-enum AppRuntimeEnvironment {
-    case development
-    case production
-
-    static var current: AppRuntimeEnvironment {
-        #if DEBUG
-        return .development
-        #else
-        return .production
-        #endif
-    }
-}
-
-/// Holds optional dependency overrides used by previews and tests.
-struct AppDIOverrides {
-    var logger: LoggerService?
-    var networkService: NetworkService?
-    var remoteHeadlinesDataSource: RemoteHeadlinesDataSource?
-    var headlinesRepository: HeadlinesRepository?
-    var bookmarkRepository: BookmarkRepository?
-    var recentHistoryRepository: RecentHistoryRepository?
-    var newsCacheRepository: NewsCacheRepository?
-
-    static let none = AppDIOverrides()
-}
-
-/// Central composition root that assembles infrastructure, repositories, use cases, and view models.
+/// Central composition root that assembles infrastructure, repositories, and view models.
 final class AppDI {
-    let logger: LoggerService
-    let configuration: AppConfiguration
-    let selectedNewsProvider: NewsProviderID
-    private let overrides: AppDIOverrides
-
-    lazy var networkService: NetworkService = overrides.networkService ?? HTTPUtility(timeout: 8.0)
-    lazy var remoteHeadlinesDataSource: RemoteHeadlinesDataSource? = overrides.remoteHeadlinesDataSource ?? HeadlinesDataSourceFactory.make(
-        configuration: configuration,
-        providerID: selectedNewsProvider,
-        networkService: networkService
-    )
-
-    lazy var headlinesRepository: HeadlinesRepository = overrides.headlinesRepository ?? HeadlinesRepositoryImpl(
-        providerID: selectedNewsProvider.rawValue,
-        providerDisplayName: selectedNewsProvider.displayName,
-        dataSource: remoteHeadlinesDataSource,
-        logger: logger
-    )
-    lazy var bookmarkRepository: BookmarkRepository = overrides.bookmarkRepository ?? JSONBookmarksStore()
-    lazy var recentHistoryRepository: RecentHistoryRepository = overrides.recentHistoryRepository ?? JSONRecentHistoryStore(maxItems: 30)
-    lazy var newsCacheRepository: NewsCacheRepository = overrides.newsCacheRepository ?? JSONNewsCacheStore()
-
-    lazy var fetchTopHeadlinesUseCase = FetchTopHeadlinesUseCase(repository: headlinesRepository)
+    private let logger: LoggerService
+    private let configuration: AppConfiguration
+    private let selectedNewsProvider: NewsProviderID
+    private let headlinesRepository: HeadlinesRepository
+    private let bookmarkRepository: BookmarkRepository
+    private let recentHistoryRepository: RecentHistoryRepository
+    private let newsCacheRepository: NewsCacheRepository
 
     init(
-        environment: AppRuntimeEnvironment = .current,
         configuration: AppConfiguration = .load(),
-        selectedNewsProvider: NewsProviderID = .newsAPI,
-        overrides: AppDIOverrides = .none
+        selectedNewsProvider: NewsProviderID = .newsAPI
     ) {
+        let logger = LoggerServiceFactory.makeDefault()
+        let networkService = HTTPUtility(timeout: 8.0)
+        let remoteHeadlinesDataSource = HeadlinesDataSourceFactory.make(
+            configuration: configuration,
+            providerID: selectedNewsProvider,
+            networkService: networkService
+        )
+
         self.configuration = configuration
         self.selectedNewsProvider = selectedNewsProvider
-        self.overrides = overrides
-        self.logger = overrides.logger ?? LoggerServiceFactory.make(for: environment)
-    }
-
-    static func live(
-        environment: AppRuntimeEnvironment = .current,
-        configuration: AppConfiguration = .load(),
-        selectedNewsProvider: NewsProviderID = .newsAPI,
-        overrides: AppDIOverrides = .none
-    ) -> AppDI {
-        AppDI(
-            environment: environment,
-            configuration: configuration,
-            selectedNewsProvider: selectedNewsProvider,
-            overrides: overrides
+        self.logger = logger
+        self.headlinesRepository = HeadlinesRepositoryImpl(
+            providerID: selectedNewsProvider.rawValue,
+            providerDisplayName: selectedNewsProvider.displayName,
+            dataSource: remoteHeadlinesDataSource,
+            logger: logger
         )
+        self.bookmarkRepository = JSONBookmarksStore()
+        self.recentHistoryRepository = JSONRecentHistoryStore(maxItems: 30)
+        self.newsCacheRepository = JSONNewsCacheStore()
     }
 
     static func preview(
         configuration: AppConfiguration = .load(),
-        selectedNewsProvider: NewsProviderID = .newsAPI,
-        overrides: AppDIOverrides = .none
+        selectedNewsProvider: NewsProviderID = .newsAPI
     ) -> AppDI {
         AppDI(
-            environment: .development,
             configuration: configuration,
-            selectedNewsProvider: selectedNewsProvider,
-            overrides: overrides
+            selectedNewsProvider: selectedNewsProvider
         )
     }
 
     @MainActor
     func makeHomeViewModel() -> HomeViewModel {
         HomeViewModel(
-            fetchTopHeadlines: fetchTopHeadlinesUseCase,
+            headlinesRepository: headlinesRepository,
             recentHistoryRepository: recentHistoryRepository,
             newsCacheRepository: newsCacheRepository,
             logger: logger
@@ -133,7 +87,7 @@ final class AppDI {
     @MainActor
     func makeExploreViewModel() -> ExploreViewModel {
         ExploreViewModel(
-            fetchTopHeadlines: fetchTopHeadlinesUseCase,
+            headlinesRepository: headlinesRepository,
             recentHistoryRepository: recentHistoryRepository,
             availableCategories: ExploreCategoriesProvider.categories(for: selectedNewsProvider),
             logger: logger
@@ -150,18 +104,16 @@ final class AppDI {
     }
 }
 
-/// Selects the logging backend based on the current runtime environment.
+/// Selects the logging backend from the active build configuration.
 private enum LoggerServiceFactory {
-    static func make(
-        for environment: AppRuntimeEnvironment,
+    static func makeDefault(
         subsystem: String = Bundle.main.bundleIdentifier ?? "NewsApp"
     ) -> LoggerService {
-        switch environment {
-        case .development:
-            return OSLoggerService(subsystem: subsystem)
-        case .production:
-            return RemoteLoggerService()
-        }
+        #if DEBUG
+        return OSLoggerService(subsystem: subsystem)
+        #else
+        return RemoteLoggerService()
+        #endif
     }
 }
 

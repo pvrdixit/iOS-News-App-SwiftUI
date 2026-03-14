@@ -28,7 +28,7 @@ final class ExploreViewModel: ObservableObject {
     @Published private(set) var isLoading: Bool = false
     @Published var alertMessage: String? = nil
 
-    private let fetchTopHeadlines: FetchTopHeadlinesUseCase
+    private let headlinesRepository: HeadlinesRepository
     private let recentHistoryRepository: RecentHistoryRepository
     private let logger: LoggerService
     private var paginationState = HeadlinesPaginationState(pageSize: 10)
@@ -65,14 +65,14 @@ final class ExploreViewModel: ObservableObject {
     }
 
     init(
-        fetchTopHeadlines: FetchTopHeadlinesUseCase,
+        headlinesRepository: HeadlinesRepository,
         recentHistoryRepository: RecentHistoryRepository,
         availableCategories: [ExploreCategory],
         logger: LoggerService
     ) {
         let resolvedCategories = availableCategories.isEmpty ? [.general] : availableCategories
 
-        self.fetchTopHeadlines = fetchTopHeadlines
+        self.headlinesRepository = headlinesRepository
         self.recentHistoryRepository = recentHistoryRepository
         self.availableCategories = resolvedCategories
         self.selectedCategory = resolvedCategories.first ?? .general
@@ -129,10 +129,11 @@ final class ExploreViewModel: ObservableObject {
         do {
             try recentHistoryRepository.touch(article)
         } catch {
-            logger.error(
+            logger.warning(
                 "Recent save failed",
                 category: .recent,
                 metadata: [
+                    "articleURL": article.articleURL,
                     "error": error.localizedDescription
                 ]
             )
@@ -157,7 +158,7 @@ private extension ExploreViewModel {
         defer { isLoading = false }
 
         do {
-            let headlinesPage = try await fetchTopHeadlines.execute(
+            let headlinesPage = try await headlinesRepository.fetchTopHeadlines(
                 HeadlinesQuery(
                     searchText: normalizedSearch,
                     category: selectedCategory.domainValue,

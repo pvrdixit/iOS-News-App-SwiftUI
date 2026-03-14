@@ -15,10 +15,10 @@ struct AppConfiguration {
     let languageCode: String
 
     static func load(bundle: Bundle = .main) -> AppConfiguration {
-        let newsAPIKey = sanitizedString(forKey: "NEWS_API_KEY", bundle: bundle)
-        let newsDataAPIKey = sanitizedString(forKey: "NEWSDATA_API_KEY", bundle: bundle)
-        let countryCode = sanitizedString(forKey: "NEWS_COUNTRY_CODE", bundle: bundle) ?? "us"
-        let languageCode = sanitizedString(forKey: "NEWS_LANGUAGE_CODE", bundle: bundle) ?? "en"
+        let newsAPIKey = configuredValue(forKey: "NEWS_API_KEY", bundle: bundle)
+        let newsDataAPIKey = configuredValue(forKey: "NEWSDATA_API_KEY", bundle: bundle)
+        let countryCode = configuredValue(forKey: "NEWS_COUNTRY_CODE", bundle: bundle) ?? "us"
+        let languageCode = configuredValue(forKey: "NEWS_LANGUAGE_CODE", bundle: bundle) ?? "en"
 
         return AppConfiguration(
             newsAPIKey: newsAPIKey,
@@ -30,17 +30,17 @@ struct AppConfiguration {
 }
 
 private extension AppConfiguration {
-    /// Trims configuration values and ignores unresolved build setting placeholders.
-    static func sanitizedString(forKey key: String, bundle: Bundle) -> String? {
+    /// Reads a configured bundle value and safely ignores accidental whitespace or unresolved placeholders.
+    static func configuredValue(forKey key: String, bundle: Bundle) -> String? {
         guard let rawValue = bundle.object(forInfoDictionaryKey: key) as? String else {
             return nil
         }
 
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.hasPrefix("$(") else {
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty, !value.hasPrefix("$(") else {
             return nil
         }
 
-        return trimmed
+        return value
     }
 }

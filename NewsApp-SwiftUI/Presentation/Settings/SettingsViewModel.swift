@@ -124,7 +124,10 @@ final class SettingsViewModel: ObservableObject {
             logger.error(
                 "Settings clear failed",
                 category: pendingAction.logCategory,
-                metadata: ["error": error.localizedDescription]
+                metadata: [
+                    "action": pendingAction.id,
+                    "error": error.localizedDescription
+                ]
             )
         }
 

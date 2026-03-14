@@ -34,17 +34,11 @@ final class HeadlinesRepositoryImpl: HeadlinesRepository {
         }
 
         do {
-            let providerPage = try await dataSource.fetchTopHeadlines(
+            return try await dataSource.fetchTopHeadlines(
                 searchText: query.searchText,
                 category: query.category,
                 pageSize: query.pageSize,
                 cursor: query.cursor
-            )
-
-            return HeadlinesPage(
-                articles: providerPage.articles,
-                totalResults: providerPage.totalResults,
-                nextCursor: providerPage.nextCursor
             )
         } catch {
             throw InfrastructureErrorMapper.mapHeadlinesError(error)

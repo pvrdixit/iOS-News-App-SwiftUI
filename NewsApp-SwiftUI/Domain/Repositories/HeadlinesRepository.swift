@@ -10,13 +10,11 @@ import Foundation
 /// Domain-level article categories used to build headline queries without provider details.
 enum NewsCategory: String {
     case top
-    case breaking
-    case crime
-    case domestic
     case world
     case business
     case education
     case entertainment
+    case environment
     case general
     case health
     case lifestyle

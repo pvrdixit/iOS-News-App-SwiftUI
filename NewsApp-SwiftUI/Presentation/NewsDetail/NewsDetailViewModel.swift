@@ -69,6 +69,11 @@ final class NewsDetailViewModel: ObservableObject {
 
     func load() async {
         guard let articleURL else {
+            logger.warning(
+                "Article URL is invalid",
+                category: .network,
+                metadata: ["articleURL": article.articleURL]
+            )
             alertMessage = invalidArticleLinkMessage
             return
         }
@@ -124,10 +129,13 @@ final class NewsDetailViewModel: ObservableObject {
             isBookmarked = try bookmarkRepository.isBookmarked(article.articleURL)
         } catch {
             isBookmarked = false
-            logger.error(
+            logger.warning(
                 "Bookmark lookup failed",
                 category: .bookmark,
-                metadata: ["error": error.localizedDescription]
+                metadata: [
+                    "articleURL": article.articleURL,
+                    "error": error.localizedDescription
+                ]
             )
         }
     }
@@ -146,7 +154,10 @@ final class NewsDetailViewModel: ObservableObject {
         } catch {
             logger.error("Bookmark toggle failed",
                          category: .bookmark,
-                         metadata: ["error": error.localizedDescription])
+                         metadata: [
+                            "articleURL": article.articleURL,
+                            "error": error.localizedDescription
+                         ])
         }
     }
 }

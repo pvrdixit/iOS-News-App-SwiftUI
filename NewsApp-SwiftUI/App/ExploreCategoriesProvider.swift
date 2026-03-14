@@ -24,9 +24,6 @@ enum ExploreCategoriesProvider {
         case .newsData:
             return [
                 .top,
-                .breaking,
-                .crime,
-                .domestic,
                 .world,
                 .business,
                 .technology,
@@ -34,8 +31,9 @@ enum ExploreCategoriesProvider {
                 .entertainment,
                 .education,
                 .lifestyle,
+                .health,
                 .science,
-                .health
+                .environment
             ]
         }
     }

@@ -24,7 +24,7 @@ final class NewsAPIHeadlinesDataSource: RemoteHeadlinesDataSource {
         category: NewsCategory?,
         pageSize: Int,
         cursor: String?
-    ) async throws -> ProviderHeadlinesPage {
+    ) async throws -> HeadlinesPage {
         let safePageSize = min(max(1, pageSize), 100)
         let page = max(1, Int(cursor ?? "") ?? 1)
 
@@ -45,7 +45,7 @@ final class NewsAPIHeadlinesDataSource: RemoteHeadlinesDataSource {
             totalResults: response.totalResults
         )
 
-        return ProviderHeadlinesPage(
+        return HeadlinesPage(
             articles: response.articles.map(\.domainArticle),
             totalResults: response.totalResults,
             nextCursor: nextCursor
@@ -60,10 +60,8 @@ private extension NewsAPIHeadlinesDataSource {
         components.host = "newsapi.org"
         components.path = "/v2/top-headlines"
         components.queryItems = [
-            URLQueryItem(name: "country", value: countryCode),
             URLQueryItem(name: "apiKey", value: apiKey),
-            URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "pageSize", value: "\(pageSize)")
+            URLQueryItem(name: "country", value: countryCode)
         ]
 
         if let categoryValue = newsAPICategoryValue(for: category) {
@@ -75,14 +73,14 @@ private extension NewsAPIHeadlinesDataSource {
             components.queryItems?.append(URLQueryItem(name: "q", value: trimmedSearch))
         }
 
-        debugPrint(components.url ?? "")
+        components.queryItems?.append(URLQueryItem(name: "page", value: "\(page)"))
+        components.queryItems?.append(URLQueryItem(name: "pageSize", value: "\(pageSize)"))
+
         return components.url
     }
 
     func newsAPICategoryValue(for category: NewsCategory?) -> String? {
         switch category {
-        case .top:
-            return nil
         case .general:
             return NewsCategory.general.rawValue
         case .business:

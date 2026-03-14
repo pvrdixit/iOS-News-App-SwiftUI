@@ -7,6 +7,12 @@
 
 import Foundation
 
+/// Identifies the presentation context so error copy can be tailored to the current screen.
+enum ViewType {
+    case newsView
+    case newsDetailView
+}
+
 /// Maps domain AppError values into screen-friendly user messages.
 enum AppErrorMapper {
     static func message(from error: Error, viewType: ViewType) -> String {

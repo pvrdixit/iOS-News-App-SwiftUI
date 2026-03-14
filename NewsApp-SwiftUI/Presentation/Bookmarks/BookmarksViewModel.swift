@@ -80,11 +80,12 @@ final class BookmarksViewModel: ObservableObject {
                 displayedArticles = try recentHistoryRepository.load()
             }
         } catch {
-            logger.error("Recent save failed",
-                         category: .recent,
-                         metadata: [
-                            "error": error.localizedDescription
-                         ])
+            logger.warning("Recent save failed",
+                           category: .recent,
+                           metadata: [
+                              "articleURL": article.articleURL,
+                              "error": error.localizedDescription
+                           ])
         }
     }
 }

@@ -14,13 +14,10 @@ public enum LogLevel {
 /// Groups logs by feature area so production issues are easier to filter and trace.
 public enum LogCategory: String {
     case `default` = "default"
-    case core
     case network
     case cache
     case recent
     case bookmark
-    case viewModel
-    case ui
 }
 
 /// Shared logging contract used across app, data, and presentation layers.

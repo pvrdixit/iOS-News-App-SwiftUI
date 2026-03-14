@@ -9,17 +9,15 @@ import Foundation
 
 /// Presentation-friendly explore categories with display titles and domain mappings.
 enum ExploreCategory: String, Identifiable {
-    case top
     case general
-    case breaking
-    case crime
-    case domestic
+    case top
     case world
     case business
     case technology
     case sports
     case entertainment
     case education
+    case environment
     case lifestyle
     case science
     case health
@@ -28,16 +26,10 @@ enum ExploreCategory: String, Identifiable {
 
     var title: String {
         switch self {
-        case .top:
-            return "Top"
         case .general:
             return "General"
-        case .breaking:
-            return "Breaking"
-        case .crime:
-            return "Crime"
-        case .domestic:
-            return "Domestic"
+        case .top:
+            return "Top"
         case .world:
             return "World"
         case .business:
@@ -50,6 +42,8 @@ enum ExploreCategory: String, Identifiable {
             return "Entertainment"
         case .education:
             return "Education"
+        case .environment:
+            return "Environment"
         case .lifestyle:
             return "Lifestyle"
         case .science:
@@ -61,16 +55,10 @@ enum ExploreCategory: String, Identifiable {
 
     var domainValue: NewsCategory {
         switch self {
-        case .top:
-            return .top
         case .general:
             return .general
-        case .breaking:
-            return .breaking
-        case .crime:
-            return .crime
-        case .domestic:
-            return .domestic
+        case .top:
+            return .top
         case .world:
             return .world
         case .business:
@@ -83,6 +71,8 @@ enum ExploreCategory: String, Identifiable {
             return .entertainment
         case .education:
             return .education
+        case .environment:
+            return .environment
         case .lifestyle:
             return .lifestyle
         case .science:

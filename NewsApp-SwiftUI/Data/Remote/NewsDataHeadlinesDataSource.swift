@@ -31,7 +31,7 @@ final class NewsDataHeadlinesDataSource: RemoteHeadlinesDataSource {
         category: NewsCategory?,
         pageSize: Int,
         cursor: String?
-    ) async throws -> ProviderHeadlinesPage {
+    ) async throws -> HeadlinesPage {
         let safePageSize = min(max(1, pageSize), 50)
 
         guard let url = makeURL(
@@ -49,7 +49,7 @@ final class NewsDataHeadlinesDataSource: RemoteHeadlinesDataSource {
             .filter { $0.duplicate == false }
             .compactMap(\.domainArticle)
 
-        return ProviderHeadlinesPage(
+        return HeadlinesPage(
             articles: articles,
             totalResults: response.totalResults,
             nextCursor: response.nextPage
@@ -89,6 +89,7 @@ private extension NewsDataHeadlinesDataSource {
             components.queryItems?.append(URLQueryItem(name: "page", value: cursor))
         }
 
+        print(components.url ?? "")
         return components.url
     }
 
@@ -97,13 +98,7 @@ private extension NewsDataHeadlinesDataSource {
         case .top:
             return "top"
         case .general:
-            return "top"
-        case .breaking:
-            return "breaking"
-        case .crime:
-            return "crime"
-        case .domestic:
-            return "domestic"
+            return "general"
         case .world:
             return "world"
         case .business:
@@ -117,7 +112,9 @@ private extension NewsDataHeadlinesDataSource {
         case .education:
             return "education"
         case .lifestyle:
-            return "food,lifestyle,tourism,environment"
+            return "food,lifestyle,tourism"
+        case .environment:
+            return "environment"
         case .science:
             return "science"
         case .health:

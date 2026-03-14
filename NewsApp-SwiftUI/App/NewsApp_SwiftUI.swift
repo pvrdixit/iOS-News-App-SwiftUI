@@ -14,8 +14,8 @@ struct NewsApp_SwiftUI: App {
 
     @MainActor
     init() {
-        appDI = .live(
-            selectedNewsProvider: .newsData
+        appDI = AppDI(
+            selectedNewsProvider: .newsAPI
         )
     }
 

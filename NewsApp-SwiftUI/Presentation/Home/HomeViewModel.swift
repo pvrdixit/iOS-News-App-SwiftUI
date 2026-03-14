@@ -31,7 +31,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var loadingState: LoadingState = .idle
     @Published var alertMessage: String? = nil
 
-    private let fetchTopHeadlines: FetchTopHeadlinesUseCase
+    private let headlinesRepository: HeadlinesRepository
     private let recentHistoryRepository: RecentHistoryRepository
     private let newsCacheRepository: NewsCacheRepository
     private let logger: LoggerService
@@ -68,12 +68,12 @@ final class HomeViewModel: ObservableObject {
     }
 
     init(
-        fetchTopHeadlines: FetchTopHeadlinesUseCase,
+        headlinesRepository: HeadlinesRepository,
         recentHistoryRepository: RecentHistoryRepository,
         newsCacheRepository: NewsCacheRepository,
         logger: LoggerService
     ) {
-        self.fetchTopHeadlines = fetchTopHeadlines
+        self.headlinesRepository = headlinesRepository
         self.recentHistoryRepository = recentHistoryRepository
         self.newsCacheRepository = newsCacheRepository
         self.logger = logger
@@ -99,7 +99,14 @@ final class HomeViewModel: ObservableObject {
         do {
             try recentHistoryRepository.touch(article)
         } catch {
-            logStorageError("Recent save failed", category: .recent, error: error)
+            logger.warning(
+                "Recent save failed",
+                category: .recent,
+                metadata: [
+                    "articleURL": article.articleURL,
+                    "error": error.localizedDescription
+                ]
+            )
         }
     }
 
@@ -135,7 +142,7 @@ private extension HomeViewModel {
         }
 
         do {
-            let headlinesPage = try await fetchTopHeadlines.execute(
+            let headlinesPage = try await headlinesRepository.fetchTopHeadlines(
                 HeadlinesQuery(
                     searchText: nil,
                     category: nil,
@@ -251,7 +258,7 @@ private extension HomeViewModel {
         do {
             return try newsCacheRepository.load()
         } catch {
-            logStorageError("Cache load failed", category: .cache, error: error)
+            logStorageWarning("Cache load failed", category: .cache, error: error)
             return nil
         }
     }
@@ -260,12 +267,12 @@ private extension HomeViewModel {
         do {
             try newsCacheRepository.save(articles)
         } catch {
-            logStorageError("Cache save failed", category: .cache, error: error)
+            logStorageWarning("Cache save failed", category: .cache, error: error)
         }
     }
 
-    func logStorageError(_ message: String, category: LogCategory, error: Error) {
-        logger.error(
+    func logStorageWarning(_ message: String, category: LogCategory, error: Error) {
+        logger.warning(
             message,
             category: category,
             metadata: [
