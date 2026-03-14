@@ -28,7 +28,7 @@ final class GNewsHeadlinesDataSource: RemoteHeadlinesDataSource {
 
     func fetchTopHeadlines(
         searchText: String?,
-        category: NewsCategory?,
+        category: String?,
         pageSize: Int,
         cursor: String?
     ) async throws -> HeadlinesPage {
@@ -70,7 +70,7 @@ private extension GNewsHeadlinesDataSource {
 
     func makeURL(
         searchText: String?,
-        category: NewsCategory?,
+        category: String?,
         pageSize: Int,
         page: Int
     ) -> URL? {
@@ -89,8 +89,8 @@ private extension GNewsHeadlinesDataSource {
             URLQueryItem(name: "page", value: "\(page)")
         ]
 
-        if let categoryValue = gNewsCategoryValue(for: category) {
-            components.queryItems?.append(URLQueryItem(name: "category", value: categoryValue))
+        if let category, !category.isEmpty {
+            components.queryItems?.append(URLQueryItem(name: "category", value: category))
         }
 
         let trimmedSearch = searchText?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -100,34 +100,6 @@ private extension GNewsHeadlinesDataSource {
 
         return components.url
     }
-
-    func gNewsCategoryValue(for category: NewsCategory?) -> String? {
-        switch category {
-        case .top:
-            return "general"
-        case .general:
-            return "general"
-        case .world:
-            return "world"
-        case .business:
-            return "business"
-        case .technology:
-            return "technology"
-        case .entertainment:
-            return "entertainment"
-        case .sports:
-            return "sports"
-        case .science:
-            return "science"
-        case .health:
-            return "health"
-        case .education, .lifestyle, .environment:
-            return nil
-        case nil:
-            return nil
-        }
-    }
-
     func nextCursor(
         currentPage: Int,
         pageSize: Int,

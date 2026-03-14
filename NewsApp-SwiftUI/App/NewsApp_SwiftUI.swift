@@ -15,7 +15,7 @@ struct NewsApp_SwiftUI: App {
     @MainActor
     init() {
         appDI = AppDI(
-            selectedNewsProvider: .gNews
+            selectedNewsProvider: .newsData
         )
     }
 

@@ -28,3 +28,30 @@ struct NewsAPISourceDTO: Decodable {
     let id: String?
     let name: String
 }
+
+/// NewsAPI supported categories in the same display order used by Explore.
+enum NewsAPISupportedCategories: String, CaseIterable, Identifiable, Codable {
+    case general
+    case business
+    case technology
+    case sports
+    case health
+    case science
+    case entertainment
+
+    static let supportedCategories: [NewsAPISupportedCategories] = [
+        .general,
+        .business,
+        .technology,
+        .sports,
+        .health,
+        .science,
+        .entertainment
+    ]
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        rawValue.firstCapitalized
+    }
+}

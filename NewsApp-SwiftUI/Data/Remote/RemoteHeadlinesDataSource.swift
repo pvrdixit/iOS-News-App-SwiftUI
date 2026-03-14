@@ -11,7 +11,7 @@ import Foundation
 protocol RemoteHeadlinesDataSource {
     func fetchTopHeadlines(
         searchText: String?,
-        category: NewsCategory?,
+        category: String?,
         pageSize: Int,
         cursor: String?
     ) async throws -> HeadlinesPage

@@ -21,7 +21,7 @@ final class NewsAPIHeadlinesDataSource: RemoteHeadlinesDataSource {
 
     func fetchTopHeadlines(
         searchText: String?,
-        category: NewsCategory?,
+        category: String?,
         pageSize: Int,
         cursor: String?
     ) async throws -> HeadlinesPage {
@@ -54,7 +54,7 @@ final class NewsAPIHeadlinesDataSource: RemoteHeadlinesDataSource {
 }
 
 private extension NewsAPIHeadlinesDataSource {
-    func makeURL(searchText: String?, category: NewsCategory?, page: Int, pageSize: Int) -> URL? {
+    func makeURL(searchText: String?, category: String?, page: Int, pageSize: Int) -> URL? {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "newsapi.org"
@@ -64,8 +64,8 @@ private extension NewsAPIHeadlinesDataSource {
             URLQueryItem(name: "country", value: countryCode)
         ]
 
-        if let categoryValue = newsAPICategoryValue(for: category) {
-            components.queryItems?.append(URLQueryItem(name: "category", value: categoryValue))
+        if let category, !category.isEmpty {
+            components.queryItems?.append(URLQueryItem(name: "category", value: category))
         }
 
         let trimmedSearch = searchText?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -78,28 +78,6 @@ private extension NewsAPIHeadlinesDataSource {
 
         return components.url
     }
-
-    func newsAPICategoryValue(for category: NewsCategory?) -> String? {
-        switch category {
-        case .general:
-            return NewsCategory.general.rawValue
-        case .business:
-            return NewsCategory.business.rawValue
-        case .technology:
-            return NewsCategory.technology.rawValue
-        case .sports:
-            return NewsCategory.sports.rawValue
-        case .entertainment:
-            return NewsCategory.entertainment.rawValue
-        case .health:
-            return NewsCategory.health.rawValue
-        case .science:
-            return NewsCategory.science.rawValue
-        default:
-            return nil
-        }
-    }
-
     static func makeNextCursor(currentPage: Int, pageSize: Int, totalResults: Int) -> String? {
         currentPage * pageSize < totalResults ? "\(currentPage + 1)" : nil
     }

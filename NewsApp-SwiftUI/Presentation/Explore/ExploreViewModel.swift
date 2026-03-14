@@ -73,12 +73,13 @@ final class ExploreViewModel: ObservableObject {
         preferenceDidChange: AnyPublisher<Void, Never>,
         logger: LoggerService
     ) {
-        let resolvedCategories = availableCategories.isEmpty ? [.general] : availableCategories
+        let defaultCategory = ExploreCategory(id: "general", title: "General")
+        let resolvedCategories = availableCategories.isEmpty ? [defaultCategory] : availableCategories
 
         self.headlinesRepository = headlinesRepository
         self.recentHistoryRepository = recentHistoryRepository
         self.availableCategories = resolvedCategories
-        self.selectedCategory = resolvedCategories.first ?? .general
+        self.selectedCategory = resolvedCategories.first ?? defaultCategory
         self.logger = logger
         observePreferenceChanges(preferenceDidChange)
     }
@@ -193,7 +194,7 @@ private extension ExploreViewModel {
             let headlinesPage = try await headlinesRepository.fetchTopHeadlines(
                 HeadlinesQuery(
                     searchText: normalizedSearch,
-                    category: selectedCategory.domainValue,
+                    category: selectedCategory.id,
                     pageSize: paginationState.pageSize,
                     cursor: cursor
                 )
@@ -218,7 +219,7 @@ private extension ExploreViewModel {
                 "Explore fetch failed",
                 category: .network,
                 metadata: [
-                    "category": selectedCategory.rawValue,
+                    "category": selectedCategory.id,
                     "search": normalizedSearch ?? "",
                     "cursor": cursor ?? "first",
                     "error": error.localizedDescription

@@ -11,33 +11,102 @@ import SwiftUI
 struct CategoryChips: View {
     @Binding var selected: ExploreCategory
     let categories: [ExploreCategory]
+    @Namespace private var chipSelectionAnimation
+
+    private let maxVisibleCategories = 5
+
+    private var visibleCategories: [ExploreCategory] {
+        let defaultVisibleCategories = Array(categories.prefix(maxVisibleCategories))
+        guard !defaultVisibleCategories.contains(selected) else {
+            return defaultVisibleCategories
+        }
+
+        var visibleCategories = Array(categories.prefix(maxVisibleCategories - 1))
+        visibleCategories.append(selected)
+        return visibleCategories
+    }
+
+    private var hiddenCategories: [ExploreCategory] {
+        categories.filter { !visibleCategories.contains($0) }
+    }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(categories) { category in
+            HStack(spacing: 0) {
+                ForEach(visibleCategories) { category in
                     Button {
-                        selected = category
+                        selectCategory(category)
                     } label: {
-                        Text(category.title)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(category == selected ? Color.accent  : Color.secondary.opacity(0.1))
-                            )
+                        chipView(title: category.title, isSelected: category == selected)
                     }
                     .buttonStyle(.plain)
                 }
+
+                if !hiddenCategories.isEmpty {
+                    moreMenuView
+                }
             }
-            .padding(.vertical, 4)
+        }
+    }
+}
+
+private extension CategoryChips {
+    var moreMenuView: some View {
+        Menu {
+            ForEach(hiddenCategories) { category in
+                Button(category.title) {
+                    selectCategory(category)
+                }
+            }
+        } label: {
+            chipView(title: "More", isSelected: false, showsDisclosure: true)
+        }
+        .buttonStyle(.plain)
+        .opacity(1)
+    }
+
+    func selectCategory(_ category: ExploreCategory) {
+        guard selected != category else { return }
+
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            selected = category
+        }
+    }
+
+    func chipView(title: String, isSelected: Bool, showsDisclosure: Bool = false) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
+
+                if showsDisclosure {
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.semibold))
+                }
+            }
+            .foregroundStyle(.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+
+            chipIndicator(isSelected: isSelected)
+        }
+    }
+
+    @ViewBuilder
+    func chipIndicator(isSelected: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.accent)
+                .frame(height: 2)
+                .matchedGeometryEffect(id: "indicator", in: chipSelectionAnimation)
+        } else {
+            Color.clear.frame(height: 2)
         }
     }
 }
 
 #Preview {
-    @Previewable @State var selected: ExploreCategory = .general
+    @Previewable @State var selected = ExploreCategory(id: "general", title: "General")
     CategoryChips(selected: $selected, categories: ExploreCategoriesProvider.categories(for: .newsAPI))
 }

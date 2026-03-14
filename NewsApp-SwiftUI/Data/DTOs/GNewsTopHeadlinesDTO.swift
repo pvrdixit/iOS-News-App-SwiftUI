@@ -34,6 +34,37 @@ struct GNewsSourceDTO: Decodable {
     let country: String?
 }
 
+/// GNews supported categories in the same display order used by Explore.
+enum GNewsSupportedCategories: String, CaseIterable, Identifiable, Codable {
+    case general
+    case world
+    case business
+    case technology
+    case sports
+    case nation
+    case health
+    case science
+    case entertainment
+
+    static let supportedCategories: [GNewsSupportedCategories] = [
+        .general,
+        .world,
+        .business,
+        .technology,
+        .sports,
+        .nation,
+        .health,
+        .science,
+        .entertainment
+    ]
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        rawValue.firstCapitalized
+    }
+}
+
 /// GNews supported countries list.
 enum GNewsSupportedCountries: String, CaseIterable, Identifiable, Codable {
     case argentina = "ar"

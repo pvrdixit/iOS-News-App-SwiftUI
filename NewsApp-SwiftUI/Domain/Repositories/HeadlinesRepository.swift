@@ -7,26 +7,10 @@
 
 import Foundation
 
-/// Domain-level article categories used to build headline queries without provider details.
-enum NewsCategory: String {
-    case top
-    case world
-    case business
-    case education
-    case entertainment
-    case environment
-    case general
-    case health
-    case lifestyle
-    case science
-    case sports
-    case technology
-}
-
 /// Domain request model for fetching a page of headlines.
 struct HeadlinesQuery {
     let searchText: String?
-    let category: NewsCategory?
+    let category: String?
     let pageSize: Int
     let cursor: String?
 }

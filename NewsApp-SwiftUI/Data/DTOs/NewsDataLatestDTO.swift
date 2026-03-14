@@ -41,6 +41,55 @@ struct NewsDataArticleDTO: Decodable {
     }
 }
 
+/// NewsData supported categories in the same display order used by Explore.
+enum NewsDataSupportedCategories: String, CaseIterable, Identifiable, Codable {
+    case top
+    case world
+    case business
+    case technology
+    case sports
+    case breaking
+    case domestic
+    case health
+    case science
+    case entertainment
+    case politics
+    case education
+    case lifestyle
+    case environment
+    case crime
+    case food
+    case tourism
+    case other
+
+    static let supportedCategories: [NewsDataSupportedCategories] = [
+        .top,
+        .world,
+        .business,
+        .technology,
+        .sports,
+        .breaking,
+        .domestic,
+        .health,
+        .science,
+        .entertainment,
+        .politics,
+        .education,
+        .lifestyle,
+        .environment,
+        .crime,
+        .food,
+        .tourism,
+        .other
+    ]
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        rawValue.firstCapitalized
+    }
+}
+
 
 /// NewsData supported countries list
 enum NewsDataSupportedCountries: String, CaseIterable, Identifiable, Codable {

@@ -28,7 +28,7 @@ final class NewsDataHeadlinesDataSource: RemoteHeadlinesDataSource {
 
     func fetchTopHeadlines(
         searchText: String?,
-        category: NewsCategory?,
+        category: String?,
         pageSize: Int,
         cursor: String?
     ) async throws -> HeadlinesPage {
@@ -60,7 +60,7 @@ final class NewsDataHeadlinesDataSource: RemoteHeadlinesDataSource {
 private extension NewsDataHeadlinesDataSource {
     func makeURL(
         searchText: String?,
-        category: NewsCategory?,
+        category: String?,
         pageSize: Int,
         cursor: String?
     ) -> URL? {
@@ -79,8 +79,8 @@ private extension NewsDataHeadlinesDataSource {
             URLQueryItem(name: "removeduplicate", value: "1")
         ]
 
-        if let categoryValue = newsDataCategoryValue(for: category) {
-            components.queryItems?.append(URLQueryItem(name: "category", value: categoryValue))
+        if let category, !category.isEmpty {
+            components.queryItems?.append(URLQueryItem(name: "category", value: category))
         }
 
         let trimmedSearch = searchText?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -93,36 +93,5 @@ private extension NewsDataHeadlinesDataSource {
         }
 
         return components.url
-    }
-
-    func newsDataCategoryValue(for category: NewsCategory?) -> String? {
-        switch category {
-        case .top:
-            return "top"
-        case .general:
-            return "general"
-        case .world:
-            return "world"
-        case .business:
-            return "business"
-        case .technology:
-            return "technology"
-        case .sports:
-            return "sports"
-        case .entertainment:
-            return "entertainment"
-        case .education:
-            return "education"
-        case .lifestyle:
-            return "food,lifestyle,tourism"
-        case .environment:
-            return "environment"
-        case .science:
-            return "science"
-        case .health:
-            return "health"
-        case nil:
-            return nil
-        }
     }
 }

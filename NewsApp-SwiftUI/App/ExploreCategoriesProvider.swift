@@ -12,40 +12,17 @@ enum ExploreCategoriesProvider {
     static func categories(for providerID: NewsProviderID) -> [ExploreCategory] {
         switch providerID {
         case .newsAPI:
-            return [
-                .general,
-                .business,
-                .technology,
-                .sports,
-                .entertainment,
-                .health,
-                .science
-            ]
+            return NewsAPISupportedCategories.supportedCategories.map {
+                ExploreCategory(id: $0.rawValue, title: $0.displayName)
+            }
         case .newsData:
-            return [
-                .top,
-                .world,
-                .business,
-                .technology,
-                .sports,
-                .entertainment,
-                .education,
-                .lifestyle,
-                .health,
-                .science,
-                .environment
-            ]
+            return NewsDataSupportedCategories.supportedCategories.map {
+                ExploreCategory(id: $0.rawValue, title: $0.displayName)
+            }
         case .gNews:
-            return [
-                .top,
-                .world,
-                .business,
-                .technology,
-                .sports,
-                .entertainment,
-                .health,
-                .science
-            ]
+            return GNewsSupportedCategories.supportedCategories.map {
+                ExploreCategory(id: $0.rawValue, title: $0.displayName)
+            }
         }
     }
 }
